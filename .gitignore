@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# WhatsApp Authentication (Sensitive)
+auth_info/
+auth_info_v2/
+
+# Data Files
+beneficiaries.csv
+temp_screenshot.jpg
+
+# Environment Variables
+.env
+
+# OS Files
+.DS_Store
+
+# Tesseract Data (Large binary)
+eng.traineddata
