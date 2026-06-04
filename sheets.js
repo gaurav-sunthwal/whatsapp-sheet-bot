@@ -8,8 +8,12 @@ const CSV_FILE_PATH = path.join(__dirname, 'beneficiaries.csv');
  * Appends a row to a local CSV file.
  */
 async function appendToSheet(fields) {
+  if (!fs.existsSync(CSV_FILE_PATH)) {
+    await initSheetHeaders();
+  }
   const row = [
-    fields.receivedAt,
+    `"${fields.receivedAt}"`,
+    `"${fields.sender || ''}"`,
     `"${fields.beneficiaryId || ''}"`,   // Quoted to prevent formatting issues
     `"${fields.beneficiaryName || ''}"`,
     `"${fields.district || ''}"`,
@@ -34,7 +38,7 @@ async function appendToSheet(fields) {
  */
 async function initSheetHeaders() {
   const headers = [
-    'Received At', 'Beneficiary ID', 'Beneficiary Name', 'District',
+    'Received At', 'Sender Number', 'Beneficiary ID', 'Beneficiary Name', 'District',
     'Taluka', 'Village', 'Sub Division', 'Mobile', 'Application Date',
     'Current Status', 'Category', 'Pump Capacity', 'Vendor Name', 'Vendor Selection Date'
   ].join(',');

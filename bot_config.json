@@ -1,0 +1,19 @@
+{
+  "selectedGroup": "120363410677045137@g.us",
+  "selectedGroupName": "Task For Me",
+  "selectedGroups": [
+    "120363410677045137@g.us",
+    "120363043815876650@g.us",
+    "120363045323316650@g.us"
+  ],
+  "selectedGroupNames": {
+    "120363410677045137@g.us": "Task For Me",
+    "120363043815876650@g.us": "Jee Adda (study material)",
+    "120363045323316650@g.us": "Work to complete 💯"
+  },
+  "autoOcr": true,
+  "saveToCsv": true,
+  "imageInterception": false,
+  "csvPath": "/Users/gaurav-sunthwal/Desktop/project-automation/whatsapp-sheet-bot/logs/whatsapp_master.csv",
+  "sensitivity": 85
+}

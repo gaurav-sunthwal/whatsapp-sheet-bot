@@ -2,16 +2,24 @@
   "name": "whatsapp-sheet-bot",
   "version": "1.0.0",
   "description": "Auto-extract Mahadiscom beneficiary data from WhatsApp screenshots → Google Sheets",
-  "main": "index.js",
+  "main": "main.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "electron .",
+    "bot": "node index.js",
     "setup": "node setup.js"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@whiskeysockets/baileys": "^7.0.0-rc11",
+    "express": "^5.2.1",
     "googleapis": "^144.0.0",
     "qrcode-terminal": "^0.12.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "tesseract.js": "^5.1.0"
+  },
+  "devDependencies": {
+    "electron": "^42.1.0",
+    "qrcode": "^1.5.4"
   }
 }

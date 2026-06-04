@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoBot Pro - WhatsApp Automation</title>
+    
+    <!-- Load constant theme.js before anything else -->
+    <script src="theme.js"></script>
+    
+    <!-- Load premium external styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body id="main-container">
+
+    <!-- ==========================================================================
+         SCREEN 1: LINK WITH WHATSAPP (Unauthenticated view)
+         ========================================================================== -->
+    <div id="login-screen">
+        <div class="login-header">
+            <div class="login-logo">
+                <!-- Tech Node Cluster Logo -->
+                <svg viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+                </svg>
+            </div>
+            <h1 class="login-title">AutoBot Pro</h1>
+            <div class="login-subtitle">WhatsApp Automation Engine</div>
+        </div>
+
+        <div class="link-card">
+            <h2 class="link-card-title">Link with WhatsApp</h2>
+            <p class="link-card-desc">Open WhatsApp on your phone and scan the code to start automating.</p>
+            
+            <div class="qr-frame">
+                <div class="qr-frame-inner">
+                    <img id="qr-image" class="qr-image-el" src="" alt="WhatsApp QR Code">
+                    <div id="qr-info" class="qr-loading">
+                        <div class="spinner"></div>
+                        <span style="font-weight: 500;">Initializing Engine...</span>
+                        <span style="font-size: 0.7rem; opacity: 0.6;">Setting up scan interface</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="scan-status-badge">
+                <div class="pulse-dot"></div>
+                <span id="status-text-login">Waiting for scan...</span>
+            </div>
+        </div>
+
+        <div class="features-row">
+            <div class="feature-item">
+                <!-- Padlock icon -->
+                <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                <span>End-to-End</span>
+            </div>
+            <div class="feature-item">
+                <!-- Bolt icon -->
+                <svg viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>
+                <span>Real-time</span>
+            </div>
+            <div class="feature-item">
+                <!-- Cloud sync icon -->
+                <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
+                <span>Cloud Sync</span>
+            </div>
+        </div>
+
+        <a href="#" class="help-link">
+            <span>Need help setting up?</span>
+            <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor;"><path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+        </a>
+    </div>
+
+    <!-- ==========================================================================
+         SCREEN 2 & 3: MAIN DASHBOARD VIEW (Authenticated view)
+         ========================================================================== -->
+    <div id="dashboard-screen">
+        <!-- SIDEBAR (Left Navigation Panel) -->
+        <aside class="sidebar">
+            <div class="sidebar-top">
+                <div class="sidebar-logo">
+                    <span class="sidebar-logo-title">AutoBot Pro</span>
+                    <span class="sidebar-logo-subtitle">OCR Engine v2.4</span>
+                </div>
+
+                <!-- Navigation Tabs (Reuses original tab click handlers) -->
+                <nav class="sidebar-nav">
+                    <div class="tab nav-item active" data-tab="data">
+                        <!-- Database/Table Icon -->
+                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 4 2 6v12c0 2 4.48 4 10 4s10-2 10-4V6c0-2-4.48-4-10-4zm0 2c3.87 0 8 1.11 8 2s-4.13 2-8 2-8-1.11-8-2 4.13-2 8-2zm-8 6c0 .89 4.13 2 8 2s8-1.11 8-2v1.93c0 .89-4.13 2-8 2s-8-1.11-8-2V10zm0 6c0 .89 4.13 2 8 2s8-1.11 8-2v1.93c0 .89-4.13 2-8 2s-8-1.11-8-2V16z"/></svg>
+                        <span>Data Management</span>
+                    </div>
+
+                    <div class="tab nav-item" data-tab="logs">
+                        <!-- Terminal/Logs Icon -->
+                        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H4v-2h8v2zm8-4H4V6h16v6z"/></svg>
+                        <span>Live Logs</span>
+                    </div>
+
+                    <div class="tab nav-item" data-tab="settings">
+                        <!-- Settings Gear Icon -->
+                        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+                        <span>Settings</span>
+                    </div>
+                </nav>
+            </div>
+
+            <div class="sidebar-bottom">
+                <button class="btn-disconnect" onclick="logout()">
+                    <!-- Exit/Disconnect Icon -->
+                    <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                    <span>Disconnect</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN VIEW (Right Panel) -->
+        <div class="main-wrapper">
+            <!-- Top Toolbar -->
+            <header class="toolbar">
+                <div class="toolbar-title" id="module-toolbar-title">WhatsApp Automation</div>
+                
+                <div class="toolbar-actions" id="header-controls" style="display: none;">
+                    <!-- Connection pill -->
+                    <div class="connected-pill">
+                        <div id="status-dot" class="status-dot-green"></div>
+                        <span id="status-text">Connected</span>
+                    </div>
+
+                    <!-- Notification -->
+                    <button class="toolbar-icon-btn">
+                        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+                    </button>
+
+                    <!-- User Profile avatar circle -->
+                    <div class="toolbar-avatar">G</div>
+                </div>
+            </header>
+
+            <!-- 1. DATA MANAGEMENT VIEW -->
+            <div id="data-view" class="content-module content-area active">
+                <div class="module-header">
+                    <div class="module-title-group">
+                        <h2 class="module-title">Mahadiscom Beneficiaries</h2>
+                        <span class="module-subtitle">Real-time data extraction monitoring and management</span>
+                    </div>
+                    
+                    <div class="module-controls">
+                        <!-- High density live CSV search -->
+                        <div class="search-box-wrapper">
+                            <svg class="search-box-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                            <input type="text" class="search-box-input" id="table-search" placeholder="Search beneficiaries..." oninput="onTableSearch()">
+                        </div>
+
+                        <!-- Action buttons -->
+                        <button class="btn-outline" onclick="loadData()">
+                            <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            <span>Refresh</span>
+                        </button>
+                        
+                        <button class="btn-primary" onclick="openFile()">
+                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
+                            <span>Export to CSV</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table Card Container -->
+                <div class="table-card">
+                    <div class="table-scroll">
+                        <table class="data-table" id="data-table">
+                            <thead>
+                                <tr id="table-header">
+                                    <!-- Dynamic headers inject here -->
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Dynamic rows inject here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pager details -->
+                    <div class="pagination-bar">
+                        <div id="pagination-info">Showing 0 of 0 entries</div>
+                        <div class="pagination-controls" id="pagination-buttons">
+                            <!-- Page buttons inject here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom mini Live Logs terminal (matches Screen 2 layout perfectly!) -->
+                <div class="logs-panel">
+                    <div class="logs-panel-header">
+                        <div class="logs-panel-header-title">
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H4v-2h8v2zm8-4H4V6h16v6z"/></svg>
+                            <span>Live OCR Logs</span>
+                        </div>
+                        <div class="logs-panel-health">SYSTEM_HEALTH: 99.4%</div>
+                    </div>
+                    <div class="terminal-scroll" id="logs-sub">
+                        <!-- Syncing stream logs -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. FULL ENGINE LIVE LOGS VIEW -->
+            <div id="logs-view" class="content-module content-area">
+                <div class="module-header">
+                    <div class="module-title-group">
+                        <h2 class="module-title">Engine Activity Logs</h2>
+                        <span class="module-subtitle">Full-screen raw diagnostic feed from WhatsApp automation engine</span>
+                    </div>
+                </div>
+
+                <div class="full-logs-container">
+                    <div class="logs-panel-header">
+                        <div class="logs-panel-header-title">
+                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H4v-2h8v2zm8-4H4V6h16v6z"/></svg>
+                            <span>System Stdout Terminal</span>
+                        </div>
+                    </div>
+                    <!-- Target for primary logs append -->
+                    <div class="terminal-scroll" style="height: 100%;" id="logs">
+                        <!-- Append stream -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. CONFIGURATION & SETTINGS VIEW -->
+            <div id="settings-view" class="content-module content-area">
+                <div class="module-header">
+                    <div class="module-title-group">
+                        <h2 class="module-title">Configuration Dashboard</h2>
+                        <span class="module-subtitle">Manage monitoring nodes, OCR parameters, and local data persistence</span>
+                    </div>
+                </div>
+
+                <!-- Selected group banner -->
+                <div id="current-group-banner" class="settings-banner" style="display: none;">
+                    <div class="settings-banner-info">
+                        <span class="settings-banner-label" id="current-group-label">Active Groups (0)</span>
+                        <span class="settings-banner-val" id="current-group-name">—</span>
+                    </div>
+                    <button class="btn-banner-clear" onclick="clearGroupSelection()">Clear All</button>
+                </div>
+
+                <div class="settings-grid">
+                    <!-- Column 1: Groups list -->
+                    <div class="settings-card-col">
+                        <div class="settings-card">
+                            <div class="settings-card-header">
+                                <span class="settings-card-title">Group Monitoring List</span>
+                                <button class="btn-primary" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;" onclick="fetchGroups()" id="fetch-groups-btn">
+                                    <span>Add Group / Fetch</span>
+                                </button>
+                            </div>
+                            
+                            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-outline-variant); flex-shrink: 0;">
+                                <div class="search-box-wrapper" style="width: 100%;">
+                                    <svg class="search-box-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                                    <input type="text" class="search-box-input" id="group-search" placeholder="Search WhatsApp groups..." oninput="filterGroups()">
+                                </div>
+                            </div>
+
+                            <div style="flex: 1; overflow-y: auto;" id="group-list">
+                                <div class="empty-state">
+                                    <span class="empty-state-icon">📋</span>
+                                    <strong>Load WhatsApp Groups</strong>
+                                    <span>Click "Add Group / Fetch" above to view active monitoring nodes</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Parameters & Sliders -->
+                    <div class="settings-card-col" style="gap: var(--spacing-gutter);">
+                        <!-- Card 1: OCR switches -->
+                        <div class="settings-card" style="height: auto;">
+                            <div class="settings-card-header">
+                                <span class="settings-card-title">OCR Parameters</span>
+                            </div>
+                            <div style="padding: 0.75rem 1.25rem;">
+                                <!-- Toggle Auto OCR -->
+                                <div class="toggle-row">
+                                    <div class="toggle-label-group">
+                                        <span class="toggle-label">Auto-OCR</span>
+                                        <span class="toggle-desc">Automatically process incoming image buffers</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="param-auto-ocr" checked onchange="saveParamChanges()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <!-- Toggle CSV -->
+                                <div class="toggle-row">
+                                    <div class="toggle-label-group">
+                                        <span class="toggle-label">Save to CSV</span>
+                                        <span class="toggle-desc">Append extracted text to local manifest</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="param-save-csv" checked onchange="saveParamChanges()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+
+                                <!-- Toggle Image Interception -->
+                                <div class="toggle-row" style="border-bottom: none;">
+                                    <div class="toggle-label-group">
+                                        <span class="toggle-label">Image Interception</span>
+                                        <span class="toggle-desc">Block media from rendering in UI</span>
+                                    </div>
+                                    <label class="switch">
+                                        <input type="checkbox" id="param-image-interception" onchange="saveParamChanges()">
+                                        <span class="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Path & Slider -->
+                        <div class="settings-card" style="flex: 1;">
+                            <div class="settings-card-header">
+                                <span class="settings-card-title">Application Config</span>
+                            </div>
+                            
+                            <div class="settings-form-scroll">
+                                <!-- CSV save path -->
+                                <div class="form-group">
+                                    <label class="form-label">CSV Save Path</label>
+                                    <div class="input-text-wrapper">
+                                        <input type="text" class="input-text" id="config-csv-path" value="/Users/admin/data/logs/whatsapp_master.csv">
+                                        <div class="input-text-btn" onclick="openFile()" title="Open existing CSV">
+                                            <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Sensitivity slider -->
+                                <div class="form-group">
+                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                        <label class="form-label">OCR Engine Sensitivity</label>
+                                        <span class="range-val-badge" id="sensitivity-badge">85%</span>
+                                    </div>
+                                    <div class="range-slider-row">
+                                        <input type="range" class="range-slider" id="config-sensitivity" min="0" max="100" value="85" oninput="updateSensitivityBadge(this.value)">
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--color-outline);">
+                                        <span>LO-RES</span>
+                                        <span>PRECISE</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Metrics in footer -->
+                            <div class="settings-footer-status">
+                                <div class="status-metric">
+                                    <span style="font-weight: 600;">CPU</span>
+                                    <div class="status-bar-bg">
+                                        <div class="status-bar-fill" style="width: 22%;"></div>
+                                    </div>
+                                </div>
+                                <div class="status-metric">
+                                    <span>BUFFER MEMORY: 1.2 GB / 4.0 GB</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Big action footer -->
+                        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
+                            <button class="btn-primary" style="flex: 1; justify-content: center; padding: 0.6rem;" onclick="saveConfigDashboard()">
+                                <span>Save Changes</span>
+                            </button>
+                            <button class="btn-outline" style="width: 44px; display: flex; justify-content: center; padding: 0.6rem;" onclick="loadSettings()">
+                                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         JAVASCRIPT FUNCTIONAL INTEGRATION
+         ========================================================================== -->
+    <script>
+        const qrImage = document.getElementById('qr-image');
+        const qrInfo = document.getElementById('qr-info');
+        const logsContainer = document.getElementById('logs');
+        const logsContainerSub = document.getElementById('logs-sub');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const tabs = document.querySelectorAll('.tab');
+        const contentAreas = document.querySelectorAll('.content-area');
+        const mainContainer = document.getElementById('main-container');
+        const headerControls = document.getElementById('header-controls');
+        const moduleToolbarTitle = document.getElementById('module-toolbar-title');
+
+        let allGroups = [];
+        let currentConfig = { selectedGroup: null };
+
+        // ── Tab Title mapping ──
+        const tabTitles = {
+            'data': 'WhatsApp Automation',
+            'logs': 'Engine Activity Logs',
+            'settings': 'Configuration Dashboard'
+        };
+
+        // ── Tab Switching ──
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                contentAreas.forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                
+                const targetViewId = `${tab.dataset.tab}-view`;
+                document.getElementById(targetViewId).classList.add('active');
+
+                // Update Toolbar Header Title
+                if (moduleToolbarTitle && tabTitles[tab.dataset.tab]) {
+                    moduleToolbarTitle.textContent = tabTitles[tab.dataset.tab];
+                }
+
+                if (tab.dataset.tab === 'data') loadData();
+                if (tab.dataset.tab === 'settings') loadSettings();
+            });
+        });
+
+        // ── Standard & Secondary Logging ──
+        function addLog(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            
+            const buildEntry = () => {
+                const entry = document.createElement('div');
+                entry.className = 'term-entry';
+                entry.innerHTML = `<span class="term-time">[${time}]</span><span class="term-text term-text-${type}">${message}</span>`;
+                return entry;
+            };
+
+            // 1. Fullscreen Console
+            if (logsContainer) {
+                logsContainer.appendChild(buildEntry());
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
+
+            // 2. Data management sub-console
+            if (logsContainerSub) {
+                logsContainerSub.appendChild(buildEntry());
+                logsContainerSub.scrollTop = logsContainerSub.scrollHeight;
+            }
+        }
+
+        // ── Data Management local parsing & pagination ──
+        let csvLines = [];
+        let filteredLines = [];
+        let currentPage = 1;
+        const itemsPerPage = 6; // Fits the high-density layout perfectly
+
+        async function loadData() {
+            try {
+                const csvText = await window.electronAPI.getCsvData();
+                if (!csvText) {
+                    document.getElementById('table-body').innerHTML = '<tr><td colspan="100" style="text-align:center; padding: 2rem; color: var(--color-outline);">No data captured yet.</td></tr>';
+                    document.getElementById('pagination-info').textContent = 'Showing 0 of 0 entries';
+                    document.getElementById('pagination-buttons').innerHTML = '';
+                    return;
+                }
+                
+                const lines = csvText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                if (lines.length <= 1) {
+                    document.getElementById('table-body').innerHTML = '<tr><td colspan="100" style="text-align:center; padding: 2rem; color: var(--color-outline);">No records found.</td></tr>';
+                    document.getElementById('pagination-info').textContent = 'Showing 0 of 0 entries';
+                    document.getElementById('pagination-buttons').innerHTML = '';
+                    return;
+                }
+
+                const header = lines[0];
+                const dataRows = lines.slice(1).reverse(); // Newest first
+
+                // Map clean array items
+                csvLines = dataRows.map(row => {
+                    const cells = [];
+                    let insideQuote = false;
+                    let currentCell = '';
+                    for (let i = 0; i < row.length; i++) {
+                        const char = row[i];
+                        if (char === '"') {
+                            insideQuote = !insideQuote;
+                        } else if (char === ',' && !insideQuote) {
+                            cells.push(currentCell.replace(/"/g, '').trim());
+                            currentCell = '';
+                        } else {
+                            currentCell += char;
+                        }
+                    }
+                    cells.push(currentCell.replace(/"/g, '').trim());
+                    return cells;
+                });
+
+                // Generate table headers
+                const headers = header.split(',').map(h => h.replace(/"/g, '').trim());
+                document.getElementById('table-header').innerHTML = headers.map(h => `<th>${h}</th>`).join('');
+
+                applyTableSearchAndRender();
+            } catch (err) {
+                addLog('Error loading data: ' + err.message, 'error');
+            }
+        }
+
+        function applyTableSearchAndRender() {
+            const query = document.getElementById('table-search').value.toLowerCase().trim();
+            if (query) {
+                filteredLines = csvLines.filter(row => {
+                    return row.some(cell => cell.toLowerCase().includes(query));
+                });
+            } else {
+                filteredLines = [...csvLines];
+            }
+            currentPage = 1;
+            renderTablePage();
+        }
+
+        function renderTablePage() {
+            const totalItems = filteredLines.length;
+            const totalPages = Math.max(1, Math.ceil(totalItems / itemsPerPage));
+
+            if (currentPage > totalPages) currentPage = totalPages;
+            if (currentPage < 1) currentPage = 1;
+
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const endIdx = Math.min(startIdx + itemsPerPage, totalItems);
+
+            const pageItems = filteredLines.slice(startIdx, endIdx);
+            const tableBody = document.getElementById('table-body');
+
+            if (totalItems === 0) {
+                tableBody.innerHTML = '<tr><td colspan="100" style="text-align:center; padding: 2rem; color: var(--color-outline);">No matching records found.</td></tr>';
+                document.getElementById('pagination-info').textContent = 'Showing 0 of 0 entries';
+                document.getElementById('pagination-buttons').innerHTML = '';
+                return;
+            }
+
+            tableBody.innerHTML = pageItems.map(rowCells => {
+                return `<tr>${rowCells.map((cell, idx) => {
+                    if (idx === 1) { // Sender Number
+                        return `<td class="cell-highlight">${cell}</td>`;
+                    } else if (idx === 2) { // Beneficiary ID
+                        return `<td class="cell-accent">${cell}</td>`;
+                    } else if (idx === 3 && cell !== '—' && cell !== '') { // Beneficiary Name
+                        return `<td style="color: var(--color-on-surface); font-weight:500;">${cell}</td>`;
+                    } else {
+                        return `<td>${cell}</td>`;
+                    }
+                }).join('')}</tr>`;
+            }).join('');
+
+            document.getElementById('pagination-info').textContent = `Showing ${startIdx + 1}–${endIdx} of ${totalItems} entries`;
+            buildPaginationButtons(totalPages);
+        }
+
+        function buildPaginationButtons(totalPages) {
+            const btnContainer = document.getElementById('pagination-buttons');
+            let btnsHtml = '';
+
+            btnsHtml += `<button class="page-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="goToPage(${currentPage - 1})">&lt;</button>`;
+
+            const maxVisible = 3;
+            let startPage = Math.max(1, currentPage - 1);
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+
+            if (endPage - startPage < maxVisible - 1) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            if (startPage > 1) {
+                btnsHtml += `<button class="page-btn" onclick="goToPage(1)">1</button>`;
+                if (startPage > 2) {
+                    btnsHtml += `<span style="color: var(--color-outline); padding:0 0.25rem;">...</span>`;
+                }
+            }
+
+            for (let p = startPage; p <= endPage; p++) {
+                btnsHtml += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+            }
+
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    btnsHtml += `<span style="color: var(--color-outline); padding:0 0.25rem;">...</span>`;
+                }
+                btnsHtml += `<button class="page-btn" onclick="goToPage(${totalPages})">${totalPages}</button>`;
+            }
+
+            btnsHtml += `<button class="page-btn ${currentPage === totalPages ? 'disabled' : ''}" onclick="goToPage(${currentPage + 1})">&gt;</button>`;
+            btnContainer.innerHTML = btnsHtml;
+        }
+
+        function goToPage(p) {
+            currentPage = p;
+            renderTablePage();
+        }
+
+        function onTableSearch() {
+            applyTableSearchAndRender();
+        }
+
+        async function openFile() {
+            const ok = await window.electronAPI.openCsvFile();
+            if (!ok) addLog('Could not open CSV file.', 'warn');
+        }
+
+        async function logout() {
+            if (confirm('Logout and clear session?')) {
+                try { await window.electronAPI.logout(); } catch (e) { console.error(e); }
+            }
+        }
+
+        // ── Settings Tab loading & saving ──
+        async function loadSettings() {
+            currentConfig = await window.electronAPI.getConfig();
+            
+            // Migrate single selectedGroup if exists
+            if (!currentConfig.selectedGroups) {
+                currentConfig.selectedGroups = currentConfig.selectedGroup ? [currentConfig.selectedGroup] : [];
+            }
+            if (!currentConfig.selectedGroupNames) {
+                currentConfig.selectedGroupNames = {};
+                if (currentConfig.selectedGroup && currentConfig.selectedGroupName) {
+                    currentConfig.selectedGroupNames[currentConfig.selectedGroup] = currentConfig.selectedGroupName;
+                }
+            }
+
+            // Fallback load for advanced parameters
+            if (currentConfig.autoOcr === undefined) currentConfig.autoOcr = true;
+            if (currentConfig.saveToCsv === undefined) currentConfig.saveToCsv = true;
+            if (currentConfig.imageInterception === undefined) currentConfig.imageInterception = false;
+            if (currentConfig.csvPath === undefined) currentConfig.csvPath = '/Users/admin/data/logs/whatsapp_master.csv';
+            if (currentConfig.sensitivity === undefined) currentConfig.sensitivity = 85;
+
+            // Sync with dashboard DOM elements
+            document.getElementById('param-auto-ocr').checked = currentConfig.autoOcr;
+            document.getElementById('param-save-csv').checked = currentConfig.saveToCsv;
+            document.getElementById('param-image-interception').checked = currentConfig.imageInterception;
+            document.getElementById('config-csv-path').value = currentConfig.csvPath;
+            document.getElementById('config-sensitivity').value = currentConfig.sensitivity;
+            document.getElementById('sensitivity-badge').textContent = currentConfig.sensitivity + '%';
+
+            updateBanner();
+        }
+
+        function updateBanner() {
+            const banner = document.getElementById('current-group-banner');
+            const labelEl = document.getElementById('current-group-label');
+            const nameEl = document.getElementById('current-group-name');
+            
+            const selectedGroups = currentConfig.selectedGroups || [];
+            if (selectedGroups.length > 0) {
+                labelEl.textContent = `Active Groups (${selectedGroups.length})`;
+                const names = selectedGroups.map(id => {
+                    const grp = allGroups.find(g => g.id === id);
+                    return grp ? grp.name : (currentConfig.selectedGroupNames[id] || id);
+                });
+                nameEl.textContent = names.join(', ');
+                banner.style.display = 'flex';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        async function fetchGroups() {
+            const btn = document.getElementById('fetch-groups-btn');
+            const listEl = document.getElementById('group-list');
+            btn.innerHTML = '<span class="spinner"></span> Fetching...';
+            btn.disabled = true;
+
+            try {
+                allGroups = await window.electronAPI.getGroups();
+                if (!allGroups.length) {
+                    listEl.innerHTML = '<div class="empty-state"><div class="icon">😕</div>No active WhatsApp groups discovered. Ensure the bot is linked.</div>';
+                    return;
+                }
+                renderGroups(allGroups);
+            } catch (err) {
+                listEl.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Retrieval error: ${err.message}</div>`;
+            } finally {
+                btn.innerHTML = 'Add Group / Fetch';
+                btn.disabled = false;
+            }
+        }
+
+        function renderGroups(groups) {
+            const listEl = document.getElementById('group-list');
+            if (!groups.length) {
+                listEl.innerHTML = '<div class="empty-state">No matching groups</div>';
+                return;
+            }
+            const selectedGroups = currentConfig.selectedGroups || [];
+            
+            // Render beautiful high-density table structure for groups
+            listEl.innerHTML = `
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40px; text-align: center;">Active</th>
+                            <th>Group Name</th>
+                            <th>Members</th>
+                            <th>Last Activity</th>
+                            <th style="text-align: right;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${groups.map(g => {
+                            const isChecked = selectedGroups.includes(g.id);
+                            return `
+                                <tr style="cursor: pointer;" onclick="selectGroup('${g.id}', '${g.name.replace(/'/g, "\\'")}')">
+                                    <td style="text-align: center; vertical-align: middle;">
+                                        <div class="custom-checkbox ${isChecked ? 'checked' : ''}"></div>
+                                    </td>
+                                    <td class="cell-highlight">${g.name}</td>
+                                    <td>${g.participantCount} members</td>
+                                    <td class="cell-muted">Just now</td>
+                                    <td style="text-align: right;">
+                                        <span class="badge ${isChecked ? 'badge-success' : 'badge-paused'}">
+                                            ${isChecked ? 'ACTIVE' : 'PAUSED'}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function filterGroups() {
+            const q = document.getElementById('group-search').value.toLowerCase().trim();
+            renderGroups(allGroups.filter(g => g.name.toLowerCase().includes(q)));
+        }
+
+        async function selectGroup(id, name) {
+            if (!currentConfig.selectedGroups) {
+                currentConfig.selectedGroups = [];
+            }
+            if (!currentConfig.selectedGroupNames) {
+                currentConfig.selectedGroupNames = {};
+            }
+
+            const idx = currentConfig.selectedGroups.indexOf(id);
+            if (idx > -1) {
+                currentConfig.selectedGroups.splice(idx, 1);
+                delete currentConfig.selectedGroupNames[id];
+                addLog(`Group deselected: ${name}`, 'info');
+            } else {
+                currentConfig.selectedGroups.push(id);
+                currentConfig.selectedGroupNames[id] = name;
+                addLog(`Group selected: ${name}`, 'success');
+            }
+
+            // Legacy backward compatibility support
+            currentConfig.selectedGroup = currentConfig.selectedGroups[0] || null;
+            currentConfig.selectedGroupName = currentConfig.selectedGroupNames[currentConfig.selectedGroup] || null;
+
+            await window.electronAPI.saveConfig(currentConfig);
+            updateBanner();
+            
+            // Re-render groups
+            filterGroups();
+        }
+
+        async function clearGroupSelection() {
+            currentConfig.selectedGroups = [];
+            currentConfig.selectedGroupNames = {};
+            currentConfig.selectedGroup = null;
+            currentConfig.selectedGroupName = null;
+            await window.electronAPI.saveConfig(currentConfig);
+            updateBanner();
+            if (allGroups.length) renderGroups(allGroups);
+            addLog('All active monitoring nodes cleared — bot will now parse all channels.', 'warn');
+        }
+
+        // ── Config saving bindings ──
+        async function saveParamChanges() {
+            currentConfig.autoOcr = document.getElementById('param-auto-ocr').checked;
+            currentConfig.saveToCsv = document.getElementById('param-save-csv').checked;
+            currentConfig.imageInterception = document.getElementById('param-image-interception').checked;
+            
+            await window.electronAPI.saveConfig(currentConfig);
+            addLog('OCR parameters updated & saved successfully.', 'success');
+        }
+
+        async function saveConfigDashboard() {
+            currentConfig.autoOcr = document.getElementById('param-auto-ocr').checked;
+            currentConfig.saveToCsv = document.getElementById('param-save-csv').checked;
+            currentConfig.imageInterception = document.getElementById('param-image-interception').checked;
+            currentConfig.csvPath = document.getElementById('config-csv-path').value;
+            currentConfig.sensitivity = parseInt(document.getElementById('config-sensitivity').value, 10);
+            
+            await window.electronAPI.saveConfig(currentConfig);
+            addLog('Application configuration saved successfully!', 'success');
+            alert('Settings saved successfully!');
+        }
+
+        function updateSensitivityBadge(val) {
+            document.getElementById('sensitivity-badge').textContent = val + '%';
+        }
+
+        // ── Bot Updates Listener (IPC Channels) ──
+        window.electronAPI.onBotUpdate((update) => {
+            const { type, data } = update;
+            if (type === 'qr') {
+                qrImage.src = data;
+                qrImage.style.display = 'block';
+                qrInfo.style.display = 'none';
+                
+                document.getElementById('status-text-login').innerText = 'Scan to Link WhatsApp';
+                mainContainer.classList.remove('authenticated');
+                headerControls.style.display = 'none';
+            } else if (type === 'log') {
+                addLog(data.message, data.type);
+                
+                // If a new row succeeds, reload the table!
+                if (data.type === 'success' && data.message.includes('Extracted')) {
+                    loadData();
+                }
+            } else if (type === 'status') {
+                statusText.innerText = data.charAt(0).toUpperCase() + data.slice(1);
+                statusDot.className = `status-dot-green ${data}`;
+                
+                if (data === 'connected') {
+                    mainContainer.classList.add('authenticated');
+                    headerControls.style.display = 'flex';
+                    // Auto-load data and settings upon link success
+                    loadData();
+                    loadSettings();
+                }
+            }
+        });
+
+        // Initialize logging
+        addLog('AutoBot Engine initialized. Awaiting credentials handshake...', 'info');
+    </script>
+</body>
+</html>

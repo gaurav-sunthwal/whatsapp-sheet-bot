@@ -4,13 +4,15 @@ const Tesseract = require('tesseract.js');
  * Runs OCR on an image and extracts all relevant fields
  * from the Mahadiscom beneficiary screenshot.
  */
-async function extractFieldsFromImage(imagePath) {
+async function extractFieldsFromImage(imagePath, onProgress) {
   console.log('🔍 Running Tesseract OCR...');
 
   const { data: { text } } = await Tesseract.recognize(imagePath, 'eng', {
     logger: m => {
       if (m.status === 'recognizing text') {
-        process.stdout.write(`\r   OCR progress: ${Math.round(m.progress * 100)}%`);
+        const progress = Math.round(m.progress * 100);
+        if (onProgress) onProgress(progress);
+        process.stdout.write(`\r   OCR progress: ${progress}%`);
       }
     }
   });
