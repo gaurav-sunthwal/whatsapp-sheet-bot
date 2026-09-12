@@ -3,6 +3,7 @@
   "selectedGroupName": null,
   "selectedGroups": [],
   "selectedGroupNames": {},
+  "groupsSetupDone": false,
   "autoOcr": true,
   "saveToCsv": true,
   "imageInterception": false,

@@ -312,6 +312,45 @@
     </div>
 
     <!-- ==========================================================================
+         FIRST-TIME GROUP SELECTION MODAL
+         ========================================================================== -->
+    <div id="group-onboarding-modal" class="onboard-overlay" style="display: none;" aria-hidden="true">
+        <div class="onboard-modal" role="dialog" aria-labelledby="onboard-title">
+            <div class="onboard-header">
+                <h2 id="onboard-title" class="onboard-title">Select groups to watch</h2>
+                <p class="onboard-desc">Pick the WhatsApp groups AutoBot should read screenshots from. You can change this later in Settings.</p>
+            </div>
+
+            <div class="onboard-search-wrap">
+                <input
+                    type="text"
+                    id="onboard-group-search"
+                    class="search-box-input"
+                    placeholder="Search groups..."
+                    oninput="filterOnboardGroups()"
+                >
+            </div>
+
+            <div id="onboard-group-list" class="onboard-group-list">
+                <div class="empty-state">
+                    <div class="spinner"></div>
+                    <span>Loading your WhatsApp groups...</span>
+                </div>
+            </div>
+
+            <div class="onboard-footer">
+                <span id="onboard-count" class="onboard-count">0 selected</span>
+                <div class="onboard-actions">
+                    <button type="button" class="btn-outline" onclick="skipGroupOnboarding()">Skip for now</button>
+                    <button type="button" class="btn-primary" id="onboard-continue-btn" onclick="finishGroupOnboarding()" disabled>
+                        Continue
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
          JAVASCRIPT FUNCTIONAL INTEGRATION
          ========================================================================== -->
     <script>
@@ -328,6 +367,8 @@
 
         let allGroups = [];
         let currentConfig = { selectedGroup: null };
+        let groupOnboardingOpen = false;
+        let onboardShownThisSession = false;
 
         const tabTitles = {
             'data': 'Home',
@@ -789,6 +830,7 @@
             await window.electronAPI.saveConfig(currentConfig);
             updateBanner();
             if (allGroups.length) filterGroups();
+            if (groupOnboardingOpen) renderOnboardGroups();
         }
 
         async function clearGroupSelection() {
@@ -799,7 +841,126 @@
             await window.electronAPI.saveConfig(currentConfig);
             updateBanner();
             if (allGroups.length) renderGroups(allGroups);
+            if (groupOnboardingOpen) renderOnboardGroups();
             addLog('Cleared watched groups — bot will process images from all chats.', 'warn');
+        }
+
+        function needsGroupOnboarding() {
+            if (onboardShownThisSession) return false;
+            if (currentConfig.groupsSetupDone) return false;
+            const selected = currentConfig.selectedGroups || [];
+            return selected.length === 0;
+        }
+
+        function updateOnboardFooter() {
+            const count = (currentConfig.selectedGroups || []).length;
+            const countEl = document.getElementById('onboard-count');
+            const btn = document.getElementById('onboard-continue-btn');
+            if (countEl) countEl.textContent = `${count} selected`;
+            if (btn) btn.disabled = count === 0;
+        }
+
+        function renderOnboardGroups(groups = allGroups) {
+            const listEl = document.getElementById('onboard-group-list');
+            if (!listEl) return;
+
+            const q = (document.getElementById('onboard-group-search')?.value || '').toLowerCase().trim();
+            const filtered = groups.filter((g) => !q || g.name.toLowerCase().includes(q));
+            const selectedGroups = currentConfig.selectedGroups || [];
+
+            if (!filtered.length) {
+                listEl.innerHTML = `<div class="empty-state">${groups.length ? 'No matching groups' : 'No WhatsApp groups found yet.'}</div>`;
+                updateOnboardFooter();
+                return;
+            }
+
+            listEl.innerHTML = filtered.map((g) => {
+                const isChecked = selectedGroups.includes(g.id);
+                const safeName = String(g.name).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                return `
+                    <button type="button" class="onboard-group-item ${isChecked ? 'selected' : ''}"
+                        onclick="selectGroup('${g.id}', '${safeName}')">
+                        <div class="custom-checkbox ${isChecked ? 'checked' : ''}"></div>
+                        <div class="onboard-group-meta">
+                            <span class="onboard-group-name">${escapeHtml(g.name)}</span>
+                            <span class="onboard-group-members">${g.participantCount || 0} members</span>
+                        </div>
+                    </button>
+                `;
+            }).join('');
+            updateOnboardFooter();
+        }
+
+        function filterOnboardGroups() {
+            renderOnboardGroups(allGroups);
+        }
+
+        async function openGroupOnboarding() {
+            const modal = document.getElementById('group-onboarding-modal');
+            if (!modal) return;
+
+            groupOnboardingOpen = true;
+            onboardShownThisSession = true;
+            modal.style.display = 'flex';
+            modal.setAttribute('aria-hidden', 'false');
+
+            const listEl = document.getElementById('onboard-group-list');
+            listEl.innerHTML = `
+                <div class="empty-state">
+                    <div class="spinner"></div>
+                    <span>Loading your WhatsApp groups...</span>
+                </div>`;
+            updateOnboardFooter();
+
+            try {
+                allGroups = await window.electronAPI.getGroups();
+                if (!allGroups.length) {
+                    // Groups can lag briefly right after connect — retry once.
+                    await new Promise((r) => setTimeout(r, 1500));
+                    allGroups = await window.electronAPI.getGroups();
+                }
+                renderOnboardGroups(allGroups);
+                if (allGroups.length && document.getElementById('group-list')) {
+                    renderGroups(allGroups);
+                }
+            } catch (err) {
+                listEl.innerHTML = `<div class="empty-state">Could not load groups: ${escapeHtml(err.message)}</div>`;
+            }
+        }
+
+        function closeGroupOnboarding() {
+            const modal = document.getElementById('group-onboarding-modal');
+            if (!modal) return;
+            groupOnboardingOpen = false;
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        async function finishGroupOnboarding() {
+            const selected = currentConfig.selectedGroups || [];
+            if (!selected.length) return;
+
+            currentConfig.groupsSetupDone = true;
+            await window.electronAPI.saveConfig(currentConfig);
+            closeGroupOnboarding();
+            addLog(`Watching ${selected.length} group(s). Ready to process screenshots.`, 'success');
+            switchToTab('data');
+        }
+
+        async function skipGroupOnboarding() {
+            currentConfig.groupsSetupDone = true;
+            await window.electronAPI.saveConfig(currentConfig);
+            closeGroupOnboarding();
+            addLog('Skipped group setup — add groups anytime from Settings.', 'warn');
+            goToAddGroups();
+        }
+
+        async function maybeShowGroupOnboarding() {
+            if (!needsGroupOnboarding()) return;
+            setTimeout(() => {
+                if (!needsGroupOnboarding()) return;
+                openGroupOnboarding();
+            }, 400);
         }
 
         async function backfillHistory(groupJids) {
@@ -902,10 +1063,14 @@
                 if (data === 'connected') {
                     mainContainer.classList.add('authenticated');
                     headerControls.style.display = 'flex';
-                    loadSettings().then(() => {
-                        loadData();
-                        refreshHomeMeta();
+                    loadSettings().then(async () => {
+                        await loadData();
+                        await refreshHomeMeta();
+                        await maybeShowGroupOnboarding();
                     });
+                } else if (data === 'disconnected' || data === 'logged_out') {
+                    closeGroupOnboarding();
+                    onboardShownThisSession = false;
                 }
             }
         });

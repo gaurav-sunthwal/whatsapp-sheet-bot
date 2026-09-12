@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
-    "@whiskeysockets/baileys": "^7.0.0-rc11",
+    "@whiskeysockets/baileys": "7.0.0-rc14",
     "express": "^5.2.1",
     "googleapis": "^144.0.0",
     "qrcode-terminal": "^0.12.0",
@@ -24,5 +24,8 @@
   "devDependencies": {
     "electron": "^42.1.0",
     "qrcode": "^1.5.4"
+  },
+  "overrides": {
+    "yauzl": "^3.3.1"
   }
 }

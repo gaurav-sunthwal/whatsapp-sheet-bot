@@ -1750,3 +1750,136 @@ input:checked + .slider:before {
     align-self: flex-start;
     padding: 0.55rem 1.1rem;
 }
+
+/* ==========================================================================
+   First-time group onboarding modal
+   ========================================================================== */
+.onboard-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.25rem;
+    background: rgba(6, 14, 32, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.onboard-modal {
+    width: min(520px, 100%);
+    max-height: min(640px, 90vh);
+    display: flex;
+    flex-direction: column;
+    background: var(--color-surface-container);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--rounded-xl);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+}
+
+.onboard-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+}
+
+.onboard-title {
+    margin: 0 0 0.35rem;
+    font-size: 1.15rem;
+    font-weight: 650;
+    color: var(--color-on-surface);
+}
+
+.onboard-desc {
+    margin: 0;
+    font-size: 0.8rem;
+    line-height: 1.45;
+    color: var(--color-on-surface-variant);
+}
+
+.onboard-search-wrap {
+    padding: 0 1.25rem 0.75rem;
+}
+
+.onboard-group-list {
+    flex: 1;
+    min-height: 180px;
+    max-height: 340px;
+    overflow-y: auto;
+    margin: 0 1.25rem;
+    border: 1px solid var(--color-outline-variant);
+    border-radius: var(--rounded-md);
+    background: var(--color-surface-container-low);
+}
+
+.onboard-group-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.7rem 0.85rem;
+    border: none;
+    border-bottom: 1px solid var(--color-outline-variant);
+    background: transparent;
+    color: var(--color-on-surface);
+    text-align: left;
+    cursor: pointer;
+}
+
+.onboard-group-item:last-child {
+    border-bottom: none;
+}
+
+.onboard-group-item:hover {
+    background: var(--color-surface-container-high);
+}
+
+.onboard-group-item.selected {
+    background: color-mix(in srgb, var(--color-primary-container) 22%, transparent);
+}
+
+.onboard-group-meta {
+    flex: 1;
+    min-width: 0;
+}
+
+.onboard-group-name {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 550;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.onboard-group-members {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.72rem;
+    color: var(--color-on-surface-variant);
+}
+
+.onboard-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem 1.25rem;
+    border-top: 1px solid var(--color-outline-variant);
+    margin-top: 0.85rem;
+}
+
+.onboard-count {
+    font-size: 0.75rem;
+    color: var(--color-on-surface-variant);
+}
+
+.onboard-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.onboard-actions .btn-primary:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}

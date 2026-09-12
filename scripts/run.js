@@ -63,6 +63,22 @@ function run(cmd, args, opts = {}) {
   }
 }
 
+function electronPathTxt() {
+  return path.join(ROOT, 'node_modules', 'electron', 'path.txt');
+}
+
+function isElectronBinaryReady() {
+  try {
+    if (!fs.existsSync(electronPathTxt())) return false;
+    const rel = fs.readFileSync(electronPathTxt(), 'utf8').trim();
+    if (!rel) return false;
+    const bin = path.join(ROOT, 'node_modules', 'electron', 'dist', rel);
+    return fs.existsSync(bin);
+  } catch (_) {
+    return false;
+  }
+}
+
 function needsNpmInstall() {
   const nm = path.join(ROOT, 'node_modules');
   const electron = path.join(nm, 'electron');
@@ -70,6 +86,8 @@ function needsNpmInstall() {
   if (!fs.existsSync(nm) || !fs.existsSync(electron) || !fs.existsSync(baileys)) {
     return true;
   }
+  // Node 24.16+/26 can leave Electron half-extracted (missing path.txt).
+  if (!isElectronBinaryReady()) return true;
   try {
     const pkgM = fs.statSync(path.join(ROOT, 'package.json')).mtimeMs;
     const lock = fs.existsSync(path.join(ROOT, 'package-lock.json'))
@@ -85,6 +103,29 @@ function needsNpmInstall() {
   } catch (_) {
     return true;
   }
+}
+
+function ensureElectronBinary() {
+  if (isElectronBinaryReady()) return;
+
+  log('Repairing Electron binary (incomplete install)...');
+  const electronDir = path.join(ROOT, 'node_modules', 'electron');
+  const distDir = path.join(electronDir, 'dist');
+  if (fs.existsSync(distDir)) {
+    fs.rmSync(distDir, { recursive: true, force: true });
+  }
+  const pathTxt = electronPathTxt();
+  if (fs.existsSync(pathTxt)) fs.unlinkSync(pathTxt);
+
+  run(process.execPath, [path.join(electronDir, 'install.js')]);
+
+  if (!isElectronBinaryReady()) {
+    fail(
+      'Electron binary failed to install on this Node version. ' +
+        'Try Node 22 LTS, or ensure package.json has "overrides": { "yauzl": "^3.3.1" } and re-run npm install.'
+    );
+  }
+  ok('Electron binary ready');
 }
 
 function ensureNodeDeps() {
@@ -106,6 +147,8 @@ function ensureNodeDeps() {
   } else {
     ok('npm packages already installed');
   }
+
+  ensureElectronBinary();
 }
 
 function pythonCmd() {

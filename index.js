@@ -1,4 +1,12 @@
-const { default: makeWASocket, useMultiFileAuthState, downloadMediaMessage, DisconnectReason } = require('@whiskeysockets/baileys');
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  downloadMediaMessage,
+  DisconnectReason,
+  fetchLatestWaWebVersion,
+  fetchLatestBaileysVersion,
+  Browsers,
+} = require('@whiskeysockets/baileys');
 const { Boom } = require('@hapi/boom');
 const fs = require('fs');
 const path = require('path');
@@ -6,6 +14,9 @@ const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const { extractFieldsFromImage } = require('./ocr');
 const { appendToSheet, getExistingBeneficiaryIds } = require('./sheets');
+
+// Fallback when live version fetch fails. Keep in sync with Baileys master Defaults.
+const FALLBACK_WA_VERSION = [2, 3000, 1043857760];
 
 const CONFIG_PATH = path.join(__dirname, 'bot_config.json');
 const SEED_PATH = path.join(__dirname, 'message_seeds.json');
@@ -133,6 +144,50 @@ let activeSock = null;
 let botUpdateFn = null;
 let isBackfilling = false;
 let isConnected = false;
+let reconnectTimer = null;
+let botGeneration = 0;
+
+async function resolveWaVersion(log = emitLog) {
+  try {
+    const wa = await fetchLatestWaWebVersion();
+    if (wa?.version?.length === 3 && !wa.error) {
+      log(`Using WhatsApp Web version ${wa.version.join('.')}`, 'info');
+      return wa.version;
+    }
+  } catch (_) {
+    // fall through
+  }
+
+  try {
+    const baileys = await fetchLatestBaileysVersion();
+    if (baileys?.version?.length === 3 && !baileys.error) {
+      log(`Using Baileys published version ${baileys.version.join('.')}`, 'info');
+      return baileys.version;
+    }
+  } catch (_) {
+    // fall through
+  }
+
+  log(`Using fallback WhatsApp version ${FALLBACK_WA_VERSION.join('.')}`, 'warn');
+  return FALLBACK_WA_VERSION;
+}
+
+function endActiveSocket() {
+  if (!activeSock) return;
+  const sock = activeSock;
+  activeSock = null;
+  isConnected = false;
+  try {
+    sock.ev.removeAllListeners();
+  } catch (_) {
+    // ignore
+  }
+  try {
+    sock.end(undefined);
+  } catch (_) {
+    // ignore
+  }
+}
 
 /** @type {Map<string, Map<string, object>>} chatJid -> msgId -> message */
 const messageCache = new Map();
@@ -599,25 +654,42 @@ async function backfillSelectedGroups(groupJids) {
 // ── Bot Entry Point ────────────────────────────────────────────────
 async function startBot(onUpdate) {
   botUpdateFn = onUpdate;
+  const generation = ++botGeneration;
+
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
+  endActiveSocket();
 
   const log = (message, type = 'info') => {
     emitLog(message, type);
   };
 
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info_v2');
+  const version = await resolveWaVersion(log);
 
   const sock = makeWASocket({
     auth: state,
+    version,
     printQRInTerminal: false,
-    // Keep the same browser fingerprint used when the session was linked.
-    // Switching to Desktop/syncFullHistory caused Connection Terminated loops.
-    browser: ['Mac OS', 'Chrome', '121.0.0'],
+    // macOS Chrome fingerprint — WEB platform + stale version causes 405 before QR.
+    browser: Browsers.macOS('Chrome'),
     syncFullHistory: false,
     generateHighQualityLinkPreview: false,
     connectTimeoutMs: 60000,
     keepAliveIntervalMs: 30000,
     markOnlineOnConnect: false,
   });
+
+  if (generation !== botGeneration) {
+    try {
+      sock.end(undefined);
+    } catch (_) {
+      // superseded by a newer startBot call
+    }
+    return;
+  }
 
   activeSock = sock;
   isConnected = false;
@@ -673,14 +745,26 @@ async function startBot(onUpdate) {
         'error'
       );
 
+      if (statusCode === 405) {
+        log(
+          'WhatsApp rejected this client version (405). Will refetch a newer version and retry.',
+          'warn'
+        );
+      }
+
       if (onUpdate) onUpdate('status', 'disconnected');
 
-      if (shouldReconnect) {
+      if (shouldReconnect && generation === botGeneration) {
         // Avoid tight reconnect loops when WhatsApp drops the socket
-        const delayMs = statusCode === DisconnectReason.restartRequired ? 2000 : 5000;
+        const delayMs = statusCode === DisconnectReason.restartRequired
+          ? 2000
+          : statusCode === 405
+            ? 3000
+            : 5000;
         log(`Reconnecting in ${delayMs / 1000} seconds...`, 'info');
-        setTimeout(() => startBot(onUpdate), delayMs);
-      } else {
+        if (reconnectTimer) clearTimeout(reconnectTimer);
+        reconnectTimer = setTimeout(() => startBot(onUpdate), delayMs);
+      } else if (!shouldReconnect) {
         log('Logged out from WhatsApp. Scan a new QR code to continue.', 'warn');
         if (onUpdate) onUpdate('status', 'logged_out');
       }
@@ -719,19 +803,19 @@ async function startBot(onUpdate) {
  * Closes the active WhatsApp socket session cleanly to release file locks.
  */
 async function logoutBot() {
+  botGeneration += 1;
+  if (reconnectTimer) {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = null;
+  }
   if (activeSock) {
     try {
       await activeSock.logout();
     } catch (e) {
       console.error('Error in socket logout:', e.message);
     }
-    try {
-      activeSock.end(undefined);
-    } catch (e) {
-      // Ignore
-    }
-    activeSock = null;
   }
+  endActiveSocket();
 }
 
 // Export for Electron
