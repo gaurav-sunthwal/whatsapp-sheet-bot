@@ -1,12 +1,15 @@
 {
   "name": "whatsapp-sheet-bot",
   "version": "1.0.0",
-  "description": "Auto-extract Mahadiscom beneficiary data from WhatsApp screenshots → Google Sheets",
+  "description": "Auto-extract Mahadiscom beneficiary data from WhatsApp screenshots → CSV",
   "main": "main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node scripts/run.js",
+    "start:app": "electron .",
     "bot": "node index.js",
-    "setup": "node setup.js"
+    "setup": "node setup.js",
+    "extractor": "cd python && .venv/bin/python -m uvicorn api:app --host 127.0.0.1 --port 8765",
+    "extractor:install": "cd python && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",

@@ -1,0 +1,11 @@
+{
+  "selectedGroup": null,
+  "selectedGroupName": null,
+  "selectedGroups": [],
+  "selectedGroupNames": {},
+  "autoOcr": true,
+  "saveToCsv": true,
+  "imageInterception": false,
+  "csvPath": "beneficiaries.csv",
+  "sensitivity": 85
+}

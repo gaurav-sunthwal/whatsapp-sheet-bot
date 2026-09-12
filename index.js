@@ -5,9 +5,15 @@ const path = require('path');
 const qrcode = require('qrcode-terminal');
 const QRCode = require('qrcode');
 const { extractFieldsFromImage } = require('./ocr');
-const { appendToSheet } = require('./sheets');
+const { appendToSheet, getExistingBeneficiaryIds } = require('./sheets');
 
 const CONFIG_PATH = path.join(__dirname, 'bot_config.json');
+const SEED_PATH = path.join(__dirname, 'message_seeds.json');
+const HISTORY_PAGE_SIZE = 50;
+const MAX_HISTORY_PAGES = 20;
+const HISTORY_WAIT_MS = 45000;
+const SEED_WAIT_MS = 35000;
+const CONNECT_WAIT_MS = 60000;
 
 // ── Config Management ──────────────────────────────────────────────
 function loadConfig() {
@@ -23,6 +29,10 @@ function loadConfig() {
 
 function saveConfig(config) {
   fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2));
+}
+
+function getSelectedGroups(config = loadConfig()) {
+  return config.selectedGroups || (config.selectedGroup ? [config.selectedGroup] : []);
 }
 
 // ── Phone Number Resolution ────────────────────────────────────────
@@ -118,8 +128,187 @@ function resolvePhoneNumber(msg, sender, participant) {
   return sender?.split('@')[0].split(':')[0] || 'unknown';
 }
 
-// ── Shared Socket Reference ────────────────────────────────────────
+// ── Shared Socket / State ──────────────────────────────────────────
 let activeSock = null;
+let botUpdateFn = null;
+let isBackfilling = false;
+let isConnected = false;
+
+/** @type {Map<string, Map<string, object>>} chatJid -> msgId -> message */
+const messageCache = new Map();
+/** @type {Set<string>} */
+const processedMessageIds = new Set();
+/** @type {Map<string, object>} chatJid -> lightweight seed { key, messageTimestamp } */
+const seedByJid = new Map();
+
+function emitLog(message, type = 'info') {
+  console.log(`[${type.toUpperCase()}] ${message}`);
+  if (botUpdateFn) {
+    botUpdateFn('log', { message, type });
+  }
+}
+
+function loadSeedsFromDisk() {
+  try {
+    if (!fs.existsSync(SEED_PATH)) return;
+    const data = JSON.parse(fs.readFileSync(SEED_PATH, 'utf-8'));
+    for (const [jid, seed] of Object.entries(data || {})) {
+      if (seed?.key?.id && seed?.messageTimestamp != null) {
+        seedByJid.set(jid, seed);
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load message seeds:', e.message);
+  }
+}
+
+function persistSeedsToDisk() {
+  try {
+    const out = {};
+    for (const [jid, seed] of seedByJid.entries()) {
+      out[jid] = seed;
+    }
+    fs.writeFileSync(SEED_PATH, JSON.stringify(out, null, 2));
+  } catch (e) {
+    console.error('Failed to save message seeds:', e.message);
+  }
+}
+
+function rememberSeed(msg) {
+  const jid = msg?.key?.remoteJid;
+  const id = msg?.key?.id;
+  if (!jid || !id || msg.messageTimestamp == null) return;
+
+  const incoming = {
+    key: {
+      remoteJid: msg.key.remoteJid,
+      id: msg.key.id,
+      fromMe: Boolean(msg.key.fromMe),
+      participant: msg.key.participant || undefined,
+    },
+    messageTimestamp: Number(msg.messageTimestamp),
+  };
+
+  const existing = seedByJid.get(jid);
+  // Keep the oldest known seed — needed for fetchMessageHistory pagination
+  if (!existing || Number(incoming.messageTimestamp) <= Number(existing.messageTimestamp)) {
+    seedByJid.set(jid, incoming);
+    persistSeedsToDisk();
+  }
+}
+
+function injectSeedStub(jid) {
+  const seed = seedByJid.get(jid);
+  if (!seed?.key?.id) return null;
+  const stub = {
+    key: { ...seed.key },
+    messageTimestamp: seed.messageTimestamp,
+    message: null,
+  };
+  if (!messageCache.has(jid)) messageCache.set(jid, new Map());
+  messageCache.get(jid).set(seed.key.id, stub);
+  return stub;
+}
+
+function cacheMessage(msg) {
+  const jid = msg?.key?.remoteJid;
+  const id = msg?.key?.id;
+  if (!jid || !id) return;
+  if (!messageCache.has(jid)) messageCache.set(jid, new Map());
+  messageCache.get(jid).set(id, msg);
+  rememberSeed(msg);
+}
+
+function getCachedMessages(jid) {
+  return [...(messageCache.get(jid)?.values() || [])];
+}
+
+function getOldestCachedMessage(jid) {
+  const msgs = getCachedMessages(jid);
+  if (!msgs.length) return null;
+  return msgs.reduce((oldest, msg) =>
+    Number(msg.messageTimestamp) < Number(oldest.messageTimestamp) ? msg : oldest
+  );
+}
+
+function toTimestampMs(ts) {
+  const n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return Date.now();
+  // WhatsApp messageTimestamp is usually seconds; HistorySyncOnDemand wants ms
+  return n < 1e12 ? n * 1000 : n;
+}
+
+function hasImageMessage(msg) {
+  return Boolean(msg?.message?.imageMessage);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function waitUntilConnected(timeoutMs = CONNECT_WAIT_MS) {
+  if (isConnected && activeSock) return true;
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    if (isConnected && activeSock) return true;
+    await sleep(500);
+  }
+  return false;
+}
+
+/**
+ * Make sure we have at least one message key for this group so
+ * fetchMessageHistory can run. Uses memory cache, disk seeds, then waits for sync.
+ */
+async function ensureGroupSeed(groupJid, timeoutMs = SEED_WAIT_MS) {
+  if (getOldestCachedMessage(groupJid)) return true;
+
+  if (injectSeedStub(groupJid)) {
+    emitLog(`Restored saved history seed for ${groupJid}`, 'info');
+    return true;
+  }
+
+  emitLog(
+    `Waiting up to ${Math.round(timeoutMs / 1000)}s for WhatsApp history sync for this group...`,
+    'info'
+  );
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (ok) => {
+      if (settled) return;
+      settled = true;
+      try {
+        activeSock?.ev.off('messaging-history.set', onHistory);
+        activeSock?.ev.off('messages.upsert', onUpsert);
+      } catch (_) {
+        // ignore
+      }
+      resolve(ok);
+    };
+
+    const check = () => {
+      if (getOldestCachedMessage(groupJid)) finish(true);
+    };
+
+    const onHistory = ({ messages }) => {
+      for (const msg of messages || []) cacheMessage(msg);
+      check();
+    };
+    const onUpsert = ({ messages }) => {
+      for (const msg of messages || []) cacheMessage(msg);
+      check();
+    };
+
+    if (activeSock) {
+      activeSock.ev.on('messaging-history.set', onHistory);
+      activeSock.ev.on('messages.upsert', onUpsert);
+    }
+    setTimeout(() => finish(Boolean(getOldestCachedMessage(groupJid))), timeoutMs);
+  });
+}
+
+loadSeedsFromDisk();
 
 /**
  * Fetches all groups the user is part of.
@@ -140,13 +329,279 @@ async function getGroups() {
   }
 }
 
+/**
+ * Downloads an image message, runs OCR, and appends to CSV.
+ * Shared by live upserts and historical backfill.
+ */
+async function processImageMessage(msg, options = {}) {
+  const { existingIds = null, source = 'live' } = options;
+  const msgId = msg.key?.id;
+  const sender = msg.key?.remoteJid;
+  const participant = msg.key?.participant || sender;
+
+  if (!hasImageMessage(msg)) {
+    return { status: 'skipped', reason: 'not-image' };
+  }
+  if (msgId && processedMessageIds.has(msgId)) {
+    return { status: 'skipped', reason: 'already-processed' };
+  }
+
+  emitLog(`📸 ${source === 'backfill' ? 'Backfill' : 'Live'} image from: ${sender}`, 'info');
+  emitLog(`   Participant: ${participant}`, 'info');
+
+  const buffer = await downloadMediaMessage(msg, 'buffer', {});
+  const imgPath = path.join(
+    __dirname,
+    `temp_screenshot_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.jpg`
+  );
+
+  try {
+    fs.writeFileSync(imgPath, buffer);
+    emitLog('Image saved, running OCR...', 'info');
+
+    const fields = await extractFieldsFromImage(imgPath, (progress) => {
+      if (botUpdateFn && progress % 10 === 0) {
+        botUpdateFn('log', { message: `OCR Progress: ${progress}%`, type: 'info' });
+      }
+    });
+
+    const resolvedSender = resolvePhoneNumber(msg, sender, participant);
+    fields.sender = resolvedSender;
+    emitLog(`Resolved sender: ${resolvedSender}`, 'info');
+
+    if (!fields.beneficiaryId) {
+      emitLog('Could not find Beneficiary ID in image. Skipping.', 'warn');
+      if (msgId) processedMessageIds.add(msgId);
+      return { status: 'skipped', reason: 'no-beneficiary-id' };
+    }
+
+    if (existingIds && existingIds.has(fields.beneficiaryId)) {
+      emitLog(`Beneficiary ${fields.beneficiaryId} already in CSV. Skipping.`, 'info');
+      if (msgId) processedMessageIds.add(msgId);
+      return { status: 'skipped', reason: 'duplicate-beneficiary' };
+    }
+
+    const config = loadConfig();
+    if (config.saveToCsv === false) {
+      emitLog('Save to CSV is turned off — extracted fields were not written.', 'warn');
+      if (msgId) processedMessageIds.add(msgId);
+      return { status: 'skipped', reason: 'csv-disabled' };
+    }
+
+    emitLog(`Extracted fields: ${JSON.stringify(fields)}`, 'success');
+    await appendToSheet(fields);
+    if (existingIds) existingIds.add(fields.beneficiaryId);
+    emitLog('Data appended to CSV!', 'success');
+
+    if (msgId) processedMessageIds.add(msgId);
+    return { status: 'processed', beneficiaryId: fields.beneficiaryId };
+  } finally {
+    try {
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    } catch (_) {
+      // ignore cleanup errors
+    }
+  }
+}
+
+/**
+ * Waits for an on-demand history chunk for a specific group.
+ * Listener is registered before fetchMessageHistory is called by the caller.
+ */
+function waitForGroupHistory(groupJid, timeoutMs = HISTORY_WAIT_MS) {
+  return new Promise((resolve) => {
+    if (!activeSock) {
+      resolve([]);
+      return;
+    }
+
+    let settled = false;
+    const finish = (messages) => {
+      if (settled) return;
+      settled = true;
+      try {
+        activeSock.ev.off('messaging-history.set', onHistory);
+      } catch (_) {
+        // ignore
+      }
+      resolve(messages);
+    };
+
+    const onHistory = ({ messages }) => {
+      const batch = messages || [];
+      for (const msg of batch) cacheMessage(msg);
+      const forGroup = batch.filter((m) => m.key?.remoteJid === groupJid);
+      if (forGroup.length > 0) {
+        finish(forGroup);
+      }
+    };
+
+    activeSock.ev.on('messaging-history.set', onHistory);
+    setTimeout(() => finish([]), timeoutMs);
+  });
+}
+
+/**
+ * Pull older messages for one group and OCR every image found.
+ */
+async function backfillOneGroup(groupJid, existingIds) {
+  const result = {
+    groupJid,
+    processed: 0,
+    skipped: 0,
+    errors: 0,
+    pagesFetched: 0,
+    message: null,
+  };
+
+  const processBatch = async (messages) => {
+    const images = messages.filter(hasImageMessage);
+    for (const msg of images) {
+      try {
+        const outcome = await processImageMessage(msg, {
+          existingIds,
+          source: 'backfill',
+        });
+        if (outcome.status === 'processed') result.processed += 1;
+        else result.skipped += 1;
+      } catch (err) {
+        result.errors += 1;
+        emitLog(`Error processing historical image: ${err.message}`, 'error');
+      }
+    }
+  };
+
+  // Cold start: wait for sync / restore disk seed before giving up
+  const hasSeed = await ensureGroupSeed(groupJid, SEED_WAIT_MS);
+  if (!hasSeed) {
+    result.message =
+      'No WhatsApp history seed for this group yet. Keep the bot online for ~30s after connect, open the group once on your phone, or send any message in the group, then try Fetch Previous Data again.';
+    emitLog(result.message, 'warn');
+    return result;
+  }
+
+  // 1) Process anything already cached for this group
+  const cached = getCachedMessages(groupJid);
+  emitLog(`Backfill ${groupJid}: ${cached.length} cached message(s)`, 'info');
+  await processBatch(cached);
+
+  // 2) Paginate older history via Baileys on-demand sync
+  for (let page = 0; page < MAX_HISTORY_PAGES; page += 1) {
+    const oldest = getOldestCachedMessage(groupJid);
+    if (!oldest?.key?.id) {
+      result.message = 'No older seed available for further history.';
+      emitLog(result.message, 'warn');
+      break;
+    }
+
+    emitLog(
+      `Requesting older history for ${groupJid} (page ${page + 1}, up to ${HISTORY_PAGE_SIZE})...`,
+      'info'
+    );
+
+    const historyPromise = waitForGroupHistory(groupJid);
+    try {
+      await activeSock.fetchMessageHistory(
+        HISTORY_PAGE_SIZE,
+        oldest.key,
+        toTimestampMs(oldest.messageTimestamp)
+      );
+    } catch (err) {
+      result.message = `History request failed: ${err.message}`;
+      emitLog(result.message, 'error');
+      break;
+    }
+
+    const olderMessages = await historyPromise;
+    result.pagesFetched += 1;
+
+    if (!olderMessages.length) {
+      result.message = result.message || 'No more historical messages returned for this group.';
+      emitLog(result.message, 'info');
+      break;
+    }
+
+    emitLog(`Received ${olderMessages.length} historical message(s) for ${groupJid}`, 'info');
+    await processBatch(olderMessages);
+
+    if (olderMessages.length < HISTORY_PAGE_SIZE) {
+      result.message = 'Reached the end of available history for this group.';
+      emitLog(result.message, 'info');
+      break;
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Backfill selected groups, or a specific subset if groupJids is provided.
+ */
+async function backfillSelectedGroups(groupJids) {
+  if (!activeSock) {
+    throw new Error('WhatsApp is not connected. Scan QR and wait until the bot is online.');
+  }
+  if (isBackfilling) {
+    throw new Error('A backfill is already running. Please wait for it to finish.');
+  }
+
+  const selectedGroups = Array.isArray(groupJids) && groupJids.length
+    ? groupJids
+    : getSelectedGroups();
+  if (!selectedGroups.length) {
+    throw new Error('Select at least one group before fetching previous data.');
+  }
+
+  const connected = await waitUntilConnected(CONNECT_WAIT_MS);
+  if (!connected) {
+    throw new Error('WhatsApp is still connecting. Wait until status is Connected, then try again.');
+  }
+
+  isBackfilling = true;
+  const existingIds = getExistingBeneficiaryIds();
+  const summary = {
+    ok: true,
+    processed: 0,
+    skipped: 0,
+    errors: 0,
+    groups: [],
+  };
+
+  try {
+    emitLog(
+      `Starting backfill for ${selectedGroups.length} selected group(s)...`,
+      'info'
+    );
+    // Brief pause so RECENT history sync after connect can land first
+    await sleep(1500);
+
+    for (const groupJid of selectedGroups) {
+      const groupResult = await backfillOneGroup(groupJid, existingIds);
+      summary.groups.push(groupResult);
+      summary.processed += groupResult.processed;
+      summary.skipped += groupResult.skipped;
+      summary.errors += groupResult.errors;
+    }
+
+    emitLog(
+      `Backfill complete — processed ${summary.processed}, skipped ${summary.skipped}, errors ${summary.errors}.`,
+      summary.errors ? 'warn' : 'success'
+    );
+    return summary;
+  } catch (err) {
+    emitLog(`Backfill failed: ${err.message}`, 'error');
+    throw err;
+  } finally {
+    isBackfilling = false;
+  }
+}
+
 // ── Bot Entry Point ────────────────────────────────────────────────
 async function startBot(onUpdate) {
+  botUpdateFn = onUpdate;
+
   const log = (message, type = 'info') => {
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    if (onUpdate) {
-      onUpdate('log', { message, type });
-    }
+    emitLog(message, type);
   };
 
   const { state, saveCreds } = await useMultiFileAuthState('./auth_info_v2');
@@ -154,16 +609,38 @@ async function startBot(onUpdate) {
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
+    // Keep the same browser fingerprint used when the session was linked.
+    // Switching to Desktop/syncFullHistory caused Connection Terminated loops.
     browser: ['Mac OS', 'Chrome', '121.0.0'],
     syncFullHistory: false,
     generateHighQualityLinkPreview: false,
     connectTimeoutMs: 60000,
     keepAliveIntervalMs: 30000,
+    markOnlineOnConnect: false,
   });
 
   activeSock = sock;
+  isConnected = false;
 
   sock.ev.on('creds.update', saveCreds);
+
+  // Cache historical messages so backfill has a seed + images to process
+  sock.ev.on('messaging-history.set', ({ messages }) => {
+    const batch = messages || [];
+    for (const msg of batch) cacheMessage(msg);
+    if (batch.length) {
+      const imageCount = batch.filter(hasImageMessage).length;
+      const groupsHit = new Set(
+        batch.map((m) => m.key?.remoteJid).filter((j) => j && j.endsWith('@g.us'))
+      );
+      log(
+        `History sync: cached ${batch.length} message(s)` +
+          (imageCount ? ` (${imageCount} image(s))` : '') +
+          (groupsHit.size ? ` across ${groupsHit.size} group(s)` : ''),
+        'info'
+      );
+    }
+  });
 
   sock.ev.on('connection.update', async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -186,18 +663,29 @@ async function startBot(onUpdate) {
     }
 
     if (connection === 'close') {
-      const shouldReconnect =
-        new Boom(lastDisconnect?.error)?.output?.statusCode !== DisconnectReason.loggedOut;
-      
-      log(`Connection closed. Reason: ${lastDisconnect?.error?.message || 'Unknown'}`, 'error');
-      
+      isConnected = false;
+      const statusCode = new Boom(lastDisconnect?.error)?.output?.statusCode;
+      const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+      log(
+        `Connection closed. Reason: ${lastDisconnect?.error?.message || 'Unknown'}` +
+          (statusCode ? ` (code ${statusCode})` : ''),
+        'error'
+      );
+
       if (onUpdate) onUpdate('status', 'disconnected');
 
       if (shouldReconnect) {
-        log('Reconnecting in 5 seconds...', 'info');
-        setTimeout(() => startBot(onUpdate), 5000);
+        // Avoid tight reconnect loops when WhatsApp drops the socket
+        const delayMs = statusCode === DisconnectReason.restartRequired ? 2000 : 5000;
+        log(`Reconnecting in ${delayMs / 1000} seconds...`, 'info');
+        setTimeout(() => startBot(onUpdate), delayMs);
+      } else {
+        log('Logged out from WhatsApp. Scan a new QR code to continue.', 'warn');
+        if (onUpdate) onUpdate('status', 'logged_out');
       }
     } else if (connection === 'open') {
+      isConnected = true;
       log('WhatsApp Bot Connected!', 'success');
       if (onUpdate) onUpdate('status', 'connected');
     }
@@ -206,53 +694,20 @@ async function startBot(onUpdate) {
   sock.ev.on('messages.upsert', async ({ messages }) => {
     for (const msg of messages) {
       try {
-        const sender = msg.key.remoteJid;
-        const participant = msg.key.participant || sender;
+        cacheMessage(msg);
 
-        // ── Load current config to check selected groups ──
-        const config = loadConfig();
-        const selectedGroups = config.selectedGroups || (config.selectedGroup ? [config.selectedGroup] : []);
+        const sender = msg.key.remoteJid;
+        const selectedGroups = getSelectedGroups();
 
         // If any groups are selected, only process images from those groups
-        if (selectedGroups && selectedGroups.length > 0) {
-          if (!selectedGroups.includes(sender)) continue;
-        }
-
-        // Check for image
-        const imageMessage = msg.message?.imageMessage;
-        if (!imageMessage) continue;
-
-        log(`📸 Image received from group: ${sender}`, 'info');
-        log(`   Participant: ${participant}`, 'info');
-
-        const buffer = await downloadMediaMessage(msg, 'buffer', {});
-        const imgPath = path.join(__dirname, 'temp_screenshot.jpg');
-        fs.writeFileSync(imgPath, buffer);
-        log('Image saved, running OCR...', 'info');
-
-        const fields = await extractFieldsFromImage(imgPath, (progress) => {
-          if (onUpdate && progress % 10 === 0) {
-            onUpdate('log', { message: `OCR Progress: ${progress}%`, type: 'info' });
-          }
-        });
-
-        // Resolve actual phone number
-        const resolvedSender = resolvePhoneNumber(msg, sender, participant);
-        fields.sender = resolvedSender;
-        log(`Resolved sender: ${resolvedSender}`, 'info');
-
-        if (!fields.beneficiaryId) {
-          log('Could not find Beneficiary ID in image. Skipping.', 'warn');
+        if (selectedGroups.length > 0 && !selectedGroups.includes(sender)) {
           continue;
         }
 
-        log(`Extracted fields: ${JSON.stringify(fields)}`, 'success');
+        if (!hasImageMessage(msg)) continue;
 
-        await appendToSheet(fields);
-        log('Data appended to CSV!', 'success');
-
-        fs.unlinkSync(imgPath);
-
+        // During backfill, live upserts are still allowed but shared processor dedupes by msg id
+        await processImageMessage(msg, { source: 'live' });
       } catch (err) {
         log(`Error processing message: ${err.message}`, 'error');
       }
@@ -280,7 +735,14 @@ async function logoutBot() {
 }
 
 // Export for Electron
-module.exports = { startBot, getGroups, loadConfig, saveConfig, logoutBot };
+module.exports = {
+  startBot,
+  getGroups,
+  loadConfig,
+  saveConfig,
+  logoutBot,
+  backfillSelectedGroups,
+};
 
 // Run if directly called
 if (require.main === module) {

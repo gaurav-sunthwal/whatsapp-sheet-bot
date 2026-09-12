@@ -5,15 +5,27 @@ node_modules/
 auth_info/
 auth_info_v2/
 
-# Data Files
+# Local config & data (do not share)
+bot_config.json
 beneficiaries.csv
+whatsapp_master.csv
+*.csv
 temp_screenshot.jpg
+message_seeds.json
+test_beneficiary.jpg
 
 # Environment Variables
 .env
+credentials.json
 
 # OS Files
 .DS_Store
 
 # Tesseract Data (Large binary)
 eng.traineddata
+
+# Python extractor
+python/.venv/
+python/.uploads/
+__pycache__/
+*.pyc

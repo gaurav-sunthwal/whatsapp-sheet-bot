@@ -82,25 +82,22 @@
             <div class="sidebar-top">
                 <div class="sidebar-logo">
                     <span class="sidebar-logo-title">AutoBot Pro</span>
-                    <span class="sidebar-logo-subtitle">OCR Engine v2.4</span>
+                    <span class="sidebar-logo-subtitle">WhatsApp → CSV</span>
                 </div>
 
-                <!-- Navigation Tabs (Reuses original tab click handlers) -->
+                <!-- Navigation Tabs -->
                 <nav class="sidebar-nav">
                     <div class="tab nav-item active" data-tab="data">
-                        <!-- Database/Table Icon -->
-                        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 4 2 6v12c0 2 4.48 4 10 4s10-2 10-4V6c0-2-4.48-4-10-4zm0 2c3.87 0 8 1.11 8 2s-4.13 2-8 2-8-1.11-8-2 4.13-2 8-2zm-8 6c0 .89 4.13 2 8 2s8-1.11 8-2v1.93c0 .89-4.13 2-8 2s-8-1.11-8-2V10zm0 6c0 .89 4.13 2 8 2s8-1.11 8-2v1.93c0 .89-4.13 2-8 2s-8-1.11-8-2V16z"/></svg>
-                        <span>Data Management</span>
+                        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+                        <span>Home</span>
                     </div>
 
                     <div class="tab nav-item" data-tab="logs">
-                        <!-- Terminal/Logs Icon -->
                         <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H4v-2h8v2zm8-4H4V6h16v6z"/></svg>
-                        <span>Live Logs</span>
+                        <span>Activity</span>
                     </div>
 
                     <div class="tab nav-item" data-tab="settings">
-                        <!-- Settings Gear Icon -->
                         <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
                         <span>Settings</span>
                     </div>
@@ -139,79 +136,57 @@
                 </div>
             </header>
 
-            <!-- 1. DATA MANAGEMENT VIEW -->
+            <!-- 1. HOME VIEW -->
             <div id="data-view" class="content-module content-area active">
                 <div class="module-header">
                     <div class="module-title-group">
-                        <h2 class="module-title">Mahadiscom Beneficiaries</h2>
-                        <span class="module-subtitle">Real-time data extraction monitoring and management</span>
+                        <h2 class="module-title">Home</h2>
+                        <span class="module-subtitle">Saved beneficiary records from your CSV</span>
                     </div>
-                    
-                    <div class="module-controls">
-                        <!-- High density live CSV search -->
-                        <div class="search-box-wrapper">
-                            <svg class="search-box-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                            <input type="text" class="search-box-input" id="table-search" placeholder="Search beneficiaries..." oninput="onTableSearch()">
+                    <div class="module-controls home-records-toolbar">
+                        <button class="btn-outline home-add-groups-btn" onclick="goToAddGroups()" title="Add or remove watched groups">
+                            <svg viewBox="0 0 24 24"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                            <span>Groups</span>
+                        </button>
+                        <div class="home-fetch-wrap">
+                            <button class="btn-primary home-fetch-btn" id="home-fetch-past-btn" onclick="toggleHomeFetchMenu()" title="Fetch previous messages for a group">
+                                <svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+                                <span>Fetch Past</span>
+                            </button>
+                            <div id="home-fetch-menu" class="home-fetch-menu" style="display: none;"></div>
                         </div>
-
-                        <!-- Action buttons -->
-                        <button class="btn-outline" onclick="loadData()">
+                        <div class="search-box-wrapper home-search">
+                            <svg class="search-box-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                            <input type="text" class="search-box-input" id="table-search" placeholder="Search records…" oninput="onTableSearch()">
+                        </div>
+                        <button class="btn-outline" onclick="loadData(); refreshHomeMeta();" title="Refresh records">
                             <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                             <span>Refresh</span>
                         </button>
-                        
-                        <button class="btn-primary" onclick="openFile()">
-                            <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM19 18H6c-2.21 0-4-1.79-4-4 0-2.05 1.53-3.76 3.56-3.97l1.07-.11.5-.95C8.08 7.14 9.94 6 12 6c2.62 0 4.88 1.86 5.39 4.43l.3 1.5 1.53.11c1.56.1 2.78 1.41 2.78 2.96 0 1.65-1.35 3-3 3z"/></svg>
-                            <span>Export to CSV</span>
-                        </button>
                     </div>
                 </div>
 
-                <!-- Table Card Container -->
-                <div class="table-card">
+                <div class="table-card home-table-card">
                     <div class="table-scroll">
                         <table class="data-table" id="data-table">
                             <thead>
-                                <tr id="table-header">
-                                    <!-- Dynamic headers inject here -->
-                                </tr>
+                                <tr id="table-header"></tr>
                             </thead>
-                            <tbody id="table-body">
-                                <!-- Dynamic rows inject here -->
-                            </tbody>
+                            <tbody id="table-body"></tbody>
                         </table>
                     </div>
-                    
-                    <!-- Pager details -->
                     <div class="pagination-bar">
                         <div id="pagination-info">Showing 0 of 0 entries</div>
-                        <div class="pagination-controls" id="pagination-buttons">
-                            <!-- Page buttons inject here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Bottom mini Live Logs terminal (matches Screen 2 layout perfectly!) -->
-                <div class="logs-panel">
-                    <div class="logs-panel-header">
-                        <div class="logs-panel-header-title">
-                            <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H4v-2h8v2zm8-4H4V6h16v6z"/></svg>
-                            <span>Live OCR Logs</span>
-                        </div>
-                        <div class="logs-panel-health">SYSTEM_HEALTH: 99.4%</div>
-                    </div>
-                    <div class="terminal-scroll" id="logs-sub">
-                        <!-- Syncing stream logs -->
+                        <div class="pagination-controls" id="pagination-buttons"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- 2. FULL ENGINE LIVE LOGS VIEW -->
             <div id="logs-view" class="content-module content-area">
                 <div class="module-header">
                     <div class="module-title-group">
-                        <h2 class="module-title">Engine Activity Logs</h2>
-                        <span class="module-subtitle">Full-screen raw diagnostic feed from WhatsApp automation engine</span>
+                        <h2 class="module-title">Activity</h2>
+                        <span class="module-subtitle">Bot logs only — OCR, sync, and errors</span>
                     </div>
                 </div>
 
@@ -219,166 +194,118 @@
                     <div class="logs-panel-header">
                         <div class="logs-panel-header-title">
                             <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 12H4v-2h8v2zm8-4H4V6h16v6z"/></svg>
-                            <span>System Stdout Terminal</span>
+                            <span>Live feed</span>
                         </div>
                     </div>
-                    <!-- Target for primary logs append -->
-                    <div class="terminal-scroll" style="height: 100%;" id="logs">
-                        <!-- Append stream -->
-                    </div>
+                    <div class="terminal-scroll" style="height: 100%;" id="logs"></div>
                 </div>
             </div>
 
-            <!-- 3. CONFIGURATION & SETTINGS VIEW -->
             <div id="settings-view" class="content-module content-area">
                 <div class="module-header">
                     <div class="module-title-group">
-                        <h2 class="module-title">Configuration Dashboard</h2>
-                        <span class="module-subtitle">Manage monitoring nodes, OCR parameters, and local data persistence</span>
+                        <h2 class="module-title">Settings</h2>
+                        <span class="module-subtitle">WhatsApp groups, CSV file, and processing options</span>
                     </div>
                 </div>
 
-                <!-- Selected group banner -->
-                <div id="current-group-banner" class="settings-banner" style="display: none;">
-                    <div class="settings-banner-info">
-                        <span class="settings-banner-label" id="current-group-label">Active Groups (0)</span>
-                        <span class="settings-banner-val" id="current-group-name">—</span>
-                    </div>
-                    <button class="btn-banner-clear" onclick="clearGroupSelection()">Clear All</button>
-                </div>
-
-                <div class="settings-grid">
-                    <!-- Column 1: Groups list -->
-                    <div class="settings-card-col">
-                        <div class="settings-card">
-                            <div class="settings-card-header">
-                                <span class="settings-card-title">Group Monitoring List</span>
-                                <button class="btn-primary" style="padding: 0.3rem 0.7rem; font-size: 0.75rem;" onclick="fetchGroups()" id="fetch-groups-btn">
-                                    <span>Add Group / Fetch</span>
-                                </button>
+                <div class="settings-simple">
+                    <div class="settings-simple-card settings-groups-card" id="settings-groups-section">
+                        <div class="home-groups-header" style="margin-bottom: 0.75rem;">
+                            <div>
+                                <h3 class="settings-simple-title" style="margin: 0;">WhatsApp groups</h3>
+                                <p class="settings-simple-desc" style="margin: 0.25rem 0 0;">Add or remove groups to watch</p>
                             </div>
-                            
-                            <div style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--color-outline-variant); flex-shrink: 0;">
-                                <div class="search-box-wrapper" style="width: 100%;">
-                                    <svg class="search-box-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                                    <input type="text" class="search-box-input" id="group-search" placeholder="Search WhatsApp groups..." oninput="filterGroups()">
-                                </div>
+                            <div class="settings-group-ops">
+                                <button class="btn-primary" style="padding: 0.35rem 0.7rem; font-size: 0.75rem;" onclick="fetchGroups()" id="fetch-groups-btn">Load / Add</button>
+                                <button class="btn-banner-clear" onclick="clearGroupSelection()" id="settings-clear-groups">Remove all</button>
                             </div>
-
-                            <div style="flex: 1; overflow-y: auto;" id="group-list">
-                                <div class="empty-state">
-                                    <span class="empty-state-icon">📋</span>
-                                    <strong>Load WhatsApp Groups</strong>
-                                    <span>Click "Add Group / Fetch" above to view active monitoring nodes</span>
-                                </div>
+                        </div>
+                        <div id="current-group-banner" class="settings-banner" style="display: none; margin-bottom: 0.75rem;">
+                            <div class="settings-banner-info">
+                                <span class="settings-banner-label" id="current-group-label">Active Groups (0)</span>
+                                <span class="settings-banner-val" id="current-group-name">—</span>
+                            </div>
+                            <div class="settings-banner-actions">
+                                <button class="btn-banner-fetch" id="backfill-history-btn" onclick="backfillHistory()">Fetch Past Data</button>
+                                <button class="btn-banner-clear" onclick="clearGroupSelection()">Clear All</button>
+                            </div>
+                        </div>
+                        <div class="search-box-wrapper" style="width: 100%; margin-bottom: 0.65rem;">
+                            <svg class="search-box-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                            <input type="text" class="search-box-input" id="group-search" placeholder="Search groups..." oninput="filterGroups()">
+                        </div>
+                        <div id="group-list" class="settings-group-list">
+                            <div class="empty-state">
+                                <strong>No groups loaded</strong>
+                                <span>Click Load / Add to choose which chats to watch</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Column 2: Parameters & Sliders -->
-                    <div class="settings-card-col" style="gap: var(--spacing-gutter);">
-                        <!-- Card 1: OCR switches -->
-                        <div class="settings-card" style="height: auto;">
-                            <div class="settings-card-header">
-                                <span class="settings-card-title">OCR Parameters</span>
-                            </div>
-                            <div style="padding: 0.75rem 1.25rem;">
-                                <!-- Toggle Auto OCR -->
-                                <div class="toggle-row">
-                                    <div class="toggle-label-group">
-                                        <span class="toggle-label">Auto-OCR</span>
-                                        <span class="toggle-desc">Automatically process incoming image buffers</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="param-auto-ocr" checked onchange="saveParamChanges()">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-
-                                <!-- Toggle CSV -->
-                                <div class="toggle-row">
-                                    <div class="toggle-label-group">
-                                        <span class="toggle-label">Save to CSV</span>
-                                        <span class="toggle-desc">Append extracted text to local manifest</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="param-save-csv" checked onchange="saveParamChanges()">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
-
-                                <!-- Toggle Image Interception -->
-                                <div class="toggle-row" style="border-bottom: none;">
-                                    <div class="toggle-label-group">
-                                        <span class="toggle-label">Image Interception</span>
-                                        <span class="toggle-desc">Block media from rendering in UI</span>
-                                    </div>
-                                    <label class="switch">
-                                        <input type="checkbox" id="param-image-interception" onchange="saveParamChanges()">
-                                        <span class="slider"></span>
-                                    </label>
-                                </div>
+                    <div class="settings-simple-card">
+                        <h3 class="settings-simple-title">CSV file</h3>
+                        <p class="settings-simple-desc">Where extracted beneficiary rows are saved</p>
+                        <div class="input-text-wrapper">
+                            <input type="text" class="input-text" id="config-csv-path" readonly>
+                            <div class="input-text-btn" onclick="chooseCsvPath()" title="Choose CSV location">
+                                <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
                             </div>
                         </div>
-
-                        <!-- Card 2: Path & Slider -->
-                        <div class="settings-card" style="flex: 1;">
-                            <div class="settings-card-header">
-                                <span class="settings-card-title">Application Config</span>
-                            </div>
-                            
-                            <div class="settings-form-scroll">
-                                <!-- CSV save path -->
-                                <div class="form-group">
-                                    <label class="form-label">CSV Save Path</label>
-                                    <div class="input-text-wrapper">
-                                        <input type="text" class="input-text" id="config-csv-path" value="/Users/admin/data/logs/whatsapp_master.csv">
-                                        <div class="input-text-btn" onclick="openFile()" title="Open existing CSV">
-                                            <svg viewBox="0 0 24 24"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Sensitivity slider -->
-                                <div class="form-group">
-                                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                                        <label class="form-label">OCR Engine Sensitivity</label>
-                                        <span class="range-val-badge" id="sensitivity-badge">85%</span>
-                                    </div>
-                                    <div class="range-slider-row">
-                                        <input type="range" class="range-slider" id="config-sensitivity" min="0" max="100" value="85" oninput="updateSensitivityBadge(this.value)">
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 0.65rem; color: var(--color-outline);">
-                                        <span>LO-RES</span>
-                                        <span>PRECISE</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Metrics in footer -->
-                            <div class="settings-footer-status">
-                                <div class="status-metric">
-                                    <span style="font-weight: 600;">CPU</span>
-                                    <div class="status-bar-bg">
-                                        <div class="status-bar-fill" style="width: 22%;"></div>
-                                    </div>
-                                </div>
-                                <div class="status-metric">
-                                    <span>BUFFER MEMORY: 1.2 GB / 4.0 GB</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Big action footer -->
-                        <div style="display: flex; gap: 0.5rem; flex-shrink: 0;">
-                            <button class="btn-primary" style="flex: 1; justify-content: center; padding: 0.6rem;" onclick="saveConfigDashboard()">
-                                <span>Save Changes</span>
-                            </button>
-                            <button class="btn-outline" style="width: 44px; display: flex; justify-content: center; padding: 0.6rem;" onclick="loadSettings()">
-                                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                            </button>
+                        <div class="settings-simple-row">
+                            <button class="btn-outline" onclick="chooseCsvPath()">Change location</button>
+                            <button class="btn-outline" onclick="openFile()">Open file</button>
                         </div>
                     </div>
+
+                    <div class="settings-simple-card">
+                        <h3 class="settings-simple-title">Processing</h3>
+                        <p class="settings-simple-desc">What happens when a WhatsApp image arrives</p>
+
+                        <div class="toggle-row">
+                            <div class="toggle-label-group">
+                                <span class="toggle-label">Auto process images</span>
+                                <span class="toggle-desc">Run OCR on new images</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="param-auto-ocr" checked onchange="saveParamChanges()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="toggle-row">
+                            <div class="toggle-label-group">
+                                <span class="toggle-label">Save to CSV</span>
+                                <span class="toggle-desc">Append rows to the CSV file</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="param-save-csv" checked onchange="saveParamChanges()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="toggle-row" style="border-bottom: none;">
+                            <div class="toggle-label-group">
+                                <span class="toggle-label">Image interception</span>
+                                <span class="toggle-desc">Advanced media handling</span>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="param-image-interception" onchange="saveParamChanges()">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="settings-simple-card">
+                        <h3 class="settings-simple-title">OCR sensitivity</h3>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="settings-simple-desc" style="margin: 0;">Higher = stricter matching</span>
+                            <span class="range-val-badge" id="sensitivity-badge">85%</span>
+                        </div>
+                        <input type="range" class="range-slider" id="config-sensitivity" min="0" max="100" value="85" oninput="updateSensitivityBadge(this.value)">
+                    </div>
+
+                    <button class="btn-primary settings-save-btn" onclick="saveConfigDashboard()">Save settings</button>
                 </div>
             </div>
         </div>
@@ -391,7 +318,6 @@
         const qrImage = document.getElementById('qr-image');
         const qrInfo = document.getElementById('qr-info');
         const logsContainer = document.getElementById('logs');
-        const logsContainerSub = document.getElementById('logs-sub');
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
         const tabs = document.querySelectorAll('.tab');
@@ -403,14 +329,91 @@
         let allGroups = [];
         let currentConfig = { selectedGroup: null };
 
-        // ── Tab Title mapping ──
         const tabTitles = {
-            'data': 'WhatsApp Automation',
-            'logs': 'Engine Activity Logs',
-            'settings': 'Configuration Dashboard'
+            'data': 'Home',
+            'logs': 'Activity',
+            'settings': 'Settings'
         };
 
-        // ── Tab Switching ──
+        function switchToTab(tabKey) {
+            const tab = document.querySelector(`.tab[data-tab="${tabKey}"]`);
+            if (tab) tab.click();
+        }
+
+        function goToAddGroups() {
+            switchToTab('settings');
+            requestAnimationFrame(() => {
+                const section = document.getElementById('settings-groups-section');
+                if (section) section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function getWatchedGroupOptions() {
+            const selected = currentConfig.selectedGroups || [];
+            const namesMap = currentConfig.selectedGroupNames || {};
+            return selected.map((id) => {
+                const fromList = allGroups.find((g) => g.id === id);
+                return { id, name: (fromList && fromList.name) || namesMap[id] || id };
+            });
+        }
+
+        function renderHomeFetchMenu() {
+            const menu = document.getElementById('home-fetch-menu');
+            if (!menu) return;
+            const groups = getWatchedGroupOptions();
+            if (!groups.length) {
+                menu.innerHTML = `
+                    <div class="home-fetch-empty">
+                        No watched groups yet.
+                        <button type="button" class="btn-outline" style="margin-top:0.5rem;width:100%;" onclick="goToAddGroups()">Add groups</button>
+                    </div>`;
+                return;
+            }
+            menu.innerHTML = `
+                <div class="home-fetch-menu-title">Fetch previous for one group</div>
+                ${groups.map((g) => `
+                    <button type="button" class="home-fetch-item" onclick="backfillHistoryForGroup('${String(g.id).replace(/'/g, "\\'")}')">
+                        <span class="home-fetch-item-name">${escapeHtml(g.name)}</span>
+                        <span class="home-fetch-item-action">Fetch</span>
+                    </button>
+                `).join('')}
+                <button type="button" class="home-fetch-item home-fetch-all" onclick="backfillHistory()">
+                    <span class="home-fetch-item-name">All watched groups</span>
+                    <span class="home-fetch-item-action">Fetch all</span>
+                </button>`;
+        }
+
+        function toggleHomeFetchMenu() {
+            const menu = document.getElementById('home-fetch-menu');
+            if (!menu) return;
+            const open = menu.style.display === 'none' || !menu.style.display;
+            if (open) {
+                renderHomeFetchMenu();
+                menu.style.display = 'block';
+            } else {
+                menu.style.display = 'none';
+            }
+        }
+
+        function closeHomeFetchMenu() {
+            const menu = document.getElementById('home-fetch-menu');
+            if (menu) menu.style.display = 'none';
+        }
+
+        document.addEventListener('click', (e) => {
+            const wrap = document.querySelector('.home-fetch-wrap');
+            if (wrap && !wrap.contains(e.target)) closeHomeFetchMenu();
+        });
+
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 tabs.forEach(t => t.classList.remove('active'));
@@ -420,45 +423,61 @@
                 const targetViewId = `${tab.dataset.tab}-view`;
                 document.getElementById(targetViewId).classList.add('active');
 
-                // Update Toolbar Header Title
                 if (moduleToolbarTitle && tabTitles[tab.dataset.tab]) {
                     moduleToolbarTitle.textContent = tabTitles[tab.dataset.tab];
                 }
 
-                if (tab.dataset.tab === 'data') loadData();
+                if (tab.dataset.tab === 'data') {
+                    loadData();
+                    refreshHomeMeta();
+                }
                 if (tab.dataset.tab === 'settings') loadSettings();
             });
         });
 
-        // ── Standard & Secondary Logging ──
+        // Logs only on Activity tab — never on Home
         function addLog(message, type = 'info') {
             const time = new Date().toLocaleTimeString();
-            
-            const buildEntry = () => {
-                const entry = document.createElement('div');
-                entry.className = 'term-entry';
-                entry.innerHTML = `<span class="term-time">[${time}]</span><span class="term-text term-text-${type}">${message}</span>`;
-                return entry;
-            };
-
-            // 1. Fullscreen Console
-            if (logsContainer) {
-                logsContainer.appendChild(buildEntry());
-                logsContainer.scrollTop = logsContainer.scrollHeight;
-            }
-
-            // 2. Data management sub-console
-            if (logsContainerSub) {
-                logsContainerSub.appendChild(buildEntry());
-                logsContainerSub.scrollTop = logsContainerSub.scrollHeight;
-            }
+            if (!logsContainer) return;
+            const entry = document.createElement('div');
+            entry.className = 'term-entry';
+            entry.innerHTML = `<span class="term-time">[${time}]</span><span class="term-text term-text-${type}">${message}</span>`;
+            logsContainer.appendChild(entry);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
         }
 
-        // ── Data Management local parsing & pagination ──
         let csvLines = [];
         let filteredLines = [];
         let currentPage = 1;
-        const itemsPerPage = 6; // Fits the high-density layout perfectly
+        const itemsPerPage = 10;
+
+        async function refreshHomeMeta() {
+            try {
+                const csvPath = await window.electronAPI.getCsvPath();
+                const pathEl = document.getElementById('stat-csv-path');
+                if (pathEl && csvPath) {
+                    const base = csvPath.split(/[/\\]/).pop();
+                    pathEl.textContent = base;
+                    pathEl.title = csvPath;
+                }
+                const groups = (currentConfig.selectedGroups || []).length;
+                const gEl = document.getElementById('stat-groups');
+                if (gEl) gEl.textContent = String(groups);
+                const rEl = document.getElementById('stat-records');
+                if (rEl) rEl.textContent = String(csvLines.length);
+            } catch (_) { /* ignore */ }
+        }
+
+        async function chooseCsvPath() {
+            const pathChosen = await window.electronAPI.chooseCsvPath();
+            if (!pathChosen) return;
+            currentConfig.csvPath = pathChosen;
+            const input = document.getElementById('config-csv-path');
+            if (input) input.value = pathChosen;
+            addLog(`CSV save location set to: ${pathChosen}`, 'success');
+            await refreshHomeMeta();
+            await loadData();
+        }
 
         async function loadData() {
             try {
@@ -506,6 +525,7 @@
                 document.getElementById('table-header').innerHTML = headers.map(h => `<th>${h}</th>`).join('');
 
                 applyTableSearchAndRender();
+                await refreshHomeMeta();
             } catch (err) {
                 addLog('Error loading data: ' + err.message, 'error');
             }
@@ -637,10 +657,11 @@
             if (currentConfig.autoOcr === undefined) currentConfig.autoOcr = true;
             if (currentConfig.saveToCsv === undefined) currentConfig.saveToCsv = true;
             if (currentConfig.imageInterception === undefined) currentConfig.imageInterception = false;
-            if (currentConfig.csvPath === undefined) currentConfig.csvPath = '/Users/admin/data/logs/whatsapp_master.csv';
+            if (currentConfig.csvPath === undefined || currentConfig.csvPath.includes('/Users/admin/')) {
+                currentConfig.csvPath = await window.electronAPI.getCsvPath();
+            }
             if (currentConfig.sensitivity === undefined) currentConfig.sensitivity = 85;
 
-            // Sync with dashboard DOM elements
             document.getElementById('param-auto-ocr').checked = currentConfig.autoOcr;
             document.getElementById('param-save-csv').checked = currentConfig.saveToCsv;
             document.getElementById('param-image-interception').checked = currentConfig.imageInterception;
@@ -649,6 +670,7 @@
             document.getElementById('sensitivity-badge').textContent = currentConfig.sensitivity + '%';
 
             updateBanner();
+            await refreshHomeMeta();
         }
 
         function updateBanner() {
@@ -668,6 +690,7 @@
             } else {
                 banner.style.display = 'none';
             }
+            refreshHomeMeta();
         }
 
         async function fetchGroups() {
@@ -686,7 +709,7 @@
             } catch (err) {
                 listEl.innerHTML = `<div class="empty-state"><div class="icon">❌</div>Retrieval error: ${err.message}</div>`;
             } finally {
-                btn.innerHTML = 'Add Group / Fetch';
+                btn.innerHTML = 'Load Groups';
                 btn.disabled = false;
             }
         }
@@ -765,9 +788,7 @@
 
             await window.electronAPI.saveConfig(currentConfig);
             updateBanner();
-            
-            // Re-render groups
-            filterGroups();
+            if (allGroups.length) filterGroups();
         }
 
         async function clearGroupSelection() {
@@ -778,7 +799,56 @@
             await window.electronAPI.saveConfig(currentConfig);
             updateBanner();
             if (allGroups.length) renderGroups(allGroups);
-            addLog('All active monitoring nodes cleared — bot will now parse all channels.', 'warn');
+            addLog('Cleared watched groups — bot will process images from all chats.', 'warn');
+        }
+
+        async function backfillHistory(groupJids) {
+            const selectedGroups = Array.isArray(groupJids) && groupJids.length
+                ? groupJids
+                : (currentConfig.selectedGroups || []);
+            if (!selectedGroups.length) {
+                addLog('Select at least one group before fetching past data.', 'warn');
+                goToAddGroups();
+                return;
+            }
+
+            closeHomeFetchMenu();
+
+            const buttons = [
+                document.getElementById('backfill-history-btn'),
+                document.getElementById('home-fetch-past-btn'),
+            ].filter(Boolean);
+            const originals = buttons.map((b) => b.innerHTML);
+            buttons.forEach((btn) => {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner"></span> Fetching...';
+            });
+            const label = selectedGroups.length === 1
+                ? '1 group'
+                : `${selectedGroups.length} group(s)`;
+            addLog(`Fetching past images for ${label}...`, 'info');
+            addLog('If this is a fresh start, the bot may wait briefly for WhatsApp history sync.', 'info');
+
+            try {
+                const result = await window.electronAPI.backfillHistory(selectedGroups);
+                addLog(
+                    `Past data fetch finished — processed ${result.processed}, skipped ${result.skipped}, errors ${result.errors}.`,
+                    result.errors ? 'warn' : 'success'
+                );
+                await loadData();
+            } catch (err) {
+                addLog(`Past data fetch failed: ${err.message}`, 'error');
+            } finally {
+                buttons.forEach((btn, i) => {
+                    btn.disabled = false;
+                    btn.innerHTML = originals[i];
+                });
+            }
+        }
+
+        async function backfillHistoryForGroup(groupId) {
+            if (!groupId) return;
+            await backfillHistory([groupId]);
         }
 
         // ── Config saving bindings ──
@@ -832,15 +902,15 @@
                 if (data === 'connected') {
                     mainContainer.classList.add('authenticated');
                     headerControls.style.display = 'flex';
-                    // Auto-load data and settings upon link success
-                    loadData();
-                    loadSettings();
+                    loadSettings().then(() => {
+                        loadData();
+                        refreshHomeMeta();
+                    });
                 }
             }
         });
 
-        // Initialize logging
-        addLog('AutoBot Engine initialized. Awaiting credentials handshake...', 'info');
+        addLog('App ready. Scan QR to connect WhatsApp.', 'info');
     </script>
 </body>
 </html>

@@ -1,33 +1,64 @@
-# 📲 WhatsApp → Google Sheet Bot
-### Mahadiscom Beneficiary Screenshot Extractor
+# AutoBot Pro — WhatsApp → CSV
+
+Mahadiscom beneficiary screenshot extractor (Electron UI + WhatsApp bot + Python OCR).
+
+---
+
+## Quick start (clients)
+
+**You only need one command.** It installs missing packages and starts the app + OCR backend together.
+
+### Prerequisites (once)
+
+- [Node.js 18+](https://nodejs.org)
+- [Python 3.9+](https://www.python.org)
+- Tesseract OCR
+  - macOS: `brew install tesseract`
+  - Ubuntu: `sudo apt install tesseract-ocr`
+  - Windows: [UB Mannheim installer](https://github.com/UB-Mannheim/tesseract/wiki)
+
+### Run
+
+```bash
+cd whatsapp-sheet-bot
+npm start
+```
+
+Or:
+
+```bash
+./start.sh
+```
+
+What `npm start` does automatically:
+
+1. Checks Node / npm / Python
+2. Runs `npm install` if packages are missing
+3. Creates Python `.venv` and installs OCR deps if needed
+4. Starts FastAPI OCR backend (`http://127.0.0.1:8765`)
+5. Opens the Electron app
+
+Close the app window (or Ctrl+C) to stop everything.
 
 ---
 
 ## What This Does
-When a screenshot from p.mahadiscom.in is received on WhatsApp from +91 8329526333,
-this bot will automatically:
+
+When a Mahadiscom screenshot arrives in a watched WhatsApp group, the bot will:
+
 1. Detect the image
-2. Run OCR (Tesseract) to read all fields
-3. Append a new row to your Google Sheet with:
-   - Date & Time Received, Beneficiary ID, Name, District, Taluka, Village,
-     Sub Division, Mobile, Application Date, Status, Category, Pump Capacity,
-     Vendor Name, Vendor Selection Date
+2. Run OCR to read beneficiary fields
+3. Append a row to your local CSV (`beneficiaries.csv` by default)
 
 ---
 
-## 🛠️ STEP 1 — Prerequisites
-
-- Node.js v18+ installed → https://nodejs.org
-- A Google account
-- The laptop must stay ON while the bot runs (or use a cheap VPS)
-
----
-
-## 🛠️ STEP 2 — Install Dependencies
+## 🛠️ Advanced / manual install
 
 ```bash
 cd whatsapp-sheet-bot
 npm install
+npm run extractor:install
+npm run start:app
 ```
 
 ---

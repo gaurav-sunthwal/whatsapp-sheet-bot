@@ -1,14 +1,15 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const fs = require('fs');
 const path = require('path');
-const { startBot, getGroups, loadConfig, saveConfig } = require('./index');
+const { startBot, getGroups, loadConfig, saveConfig, backfillSelectedGroups } = require('./index');
+const { getCsvPath, readCsvText, DEFAULT_CSV_PATH } = require('./sheets');
 
 let mainWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1050,
-    height: 750,
+    width: 1100,
+    height: 760,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
@@ -19,56 +20,63 @@ function createWindow() {
   });
 
   mainWindow.loadFile('index.html');
-
-  // Uncomment to open DevTools
-  // mainWindow.webContents.openDevTools();
 }
 
 app.whenReady().then(() => {
   createWindow();
 
-  // Start the bot and pass a callback for updates
+  try {
+    const config = loadConfig();
+    if (!config.csvPath || config.csvPath.includes('/Users/admin/')) {
+      config.csvPath = DEFAULT_CSV_PATH;
+      saveConfig(config);
+    }
+  } catch (_) {
+    // ignore
+  }
+
   startBot((type, data) => {
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('bot-update', { type, data });
     }
   });
 
-  // ── CSV Handlers ──────────────────────────────────────────────────
-  ipcMain.handle('get-csv-data', async () => {
-    const csvPath = path.join(__dirname, 'beneficiaries.csv');
-    if (fs.existsSync(csvPath)) {
-      return fs.readFileSync(csvPath, 'utf-8');
-    }
-    return '';
-  });
+  ipcMain.handle('get-csv-data', async () => readCsvText());
+
+  ipcMain.handle('get-csv-path', async () => getCsvPath());
 
   ipcMain.handle('open-csv-file', async () => {
-    const csvPath = path.join(__dirname, 'beneficiaries.csv');
-    if (fs.existsSync(csvPath)) {
-      await shell.openPath(csvPath);
-      return true;
+    const csvPath = getCsvPath();
+    if (!fs.existsSync(csvPath)) {
+      const { initSheetHeaders } = require('./sheets');
+      await initSheetHeaders(csvPath);
     }
-    return false;
+    await shell.openPath(csvPath);
+    return true;
   });
 
-  // ── Group & Settings Handlers ─────────────────────────────────────
-  ipcMain.handle('get-groups', async () => {
-    return await getGroups();
+  ipcMain.handle('choose-csv-path', async () => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Choose CSV save location',
+      defaultPath: getCsvPath(),
+      filters: [{ name: 'CSV', extensions: ['csv'] }],
+    });
+    if (result.canceled || !result.filePath) return null;
+    const config = loadConfig();
+    config.csvPath = result.filePath;
+    saveConfig(config);
+    return result.filePath;
   });
 
-  ipcMain.handle('get-config', async () => {
-    return loadConfig();
-  });
-
+  ipcMain.handle('get-groups', async () => await getGroups());
+  ipcMain.handle('get-config', async () => loadConfig());
   ipcMain.handle('save-config', async (_event, config) => {
     saveConfig(config);
     return true;
   });
+  ipcMain.handle('backfill-history', async (_event, groupJids) => await backfillSelectedGroups(groupJids));
 
-  // ── Auth Handlers ─────────────────────────────────────────────────
   ipcMain.handle('logout', async () => {
-    // 1. Properly end the bot session and release file locks
     try {
       const { logoutBot } = require('./index');
       await logoutBot();
@@ -76,10 +84,8 @@ app.whenReady().then(() => {
       console.error('Error stopping bot on logout:', err.message);
     }
 
-    // 2. Wait 1 second to ensure all file handles are completely closed
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // 3. Clear auth files
     const authPath = path.join(__dirname, 'auth_info_v2');
     if (fs.existsSync(authPath)) {
       try {
